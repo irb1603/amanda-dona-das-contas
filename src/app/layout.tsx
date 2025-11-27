@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 import { MonthProvider } from "@/context/MonthContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { SearchProvider } from "@/context/SearchContext";
+import { SidebarProvider } from "@/context/SidebarContext";
 
 export default function RootLayout({
   children,
@@ -26,15 +27,17 @@ export default function RootLayout({
         <SettingsProvider>
           <SearchProvider>
             <MonthProvider>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1 flex flex-col md:ml-0 transition-all duration-300">
-                  <Header />
-                  <main className="flex-1 p-4 md:p-8 md:ml-64">
-                    {children}
-                  </main>
+              <SidebarProvider>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <div className="flex-1 flex flex-col md:ml-0 transition-all duration-300">
+                    <Header />
+                    <main className="flex-1 p-4 md:p-8 md:ml-64">
+                      {children}
+                    </main>
+                  </div>
                 </div>
-              </div>
+              </SidebarProvider>
             </MonthProvider>
           </SearchProvider>
         </SettingsProvider>

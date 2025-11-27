@@ -4,10 +4,12 @@ import { Menu, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useMonth } from '@/context/MonthContext';
 import { useSearch } from '@/context/SearchContext';
+import { useSidebar } from '@/context/SidebarContext';
 
 export function Header() {
     const { selectedDate, nextMonth, prevMonth } = useMonth();
     const { searchTerm, setSearchTerm } = useSearch();
+    const { toggleSidebar } = useSidebar();
 
     const formattedDate = selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     // Capitalize first letter
@@ -16,7 +18,7 @@ export function Header() {
     return (
         <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 md:ml-64">
             <div className="flex items-center gap-4">
-                <button className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                <button onClick={toggleSidebar} className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
                     <Menu size={24} />
                 </button>
 
