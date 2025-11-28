@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { X, Save, Plus, Trash2, Wrench, Loader2 } from 'lucide-react';
+import { CATEGORIES } from '@/constants';
 import { Pilar } from '@/types';
 import { removeDuplicateTransactions } from '@/services/transactionService';
 
@@ -113,7 +114,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     type="number"
                                     value={localOpeningBalance}
                                     onChange={e => setLocalOpeningBalance(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
                                 />
                             </div>
                             <div>
@@ -122,7 +123,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     type="number"
                                     value={localExpenseTarget}
                                     onChange={e => setLocalExpenseTarget(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
                                 />
                             </div>
                         </div>
@@ -142,7 +143,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 setLocalIncomeSources(newSources);
                                             }}
                                             placeholder="Nome (ex: Salário A)"
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 font-medium"
                                         />
                                         <input
                                             type="number"
@@ -153,7 +154,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 setLocalIncomeSources(newSources);
                                             }}
                                             placeholder="Valor"
-                                            className="w-32 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                            className="w-32 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 font-medium"
                                         />
                                         <button
                                             onClick={() => {
@@ -190,7 +191,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         type="number"
                                         value={(localGoals.fixed * 100).toFixed(0)}
                                         onChange={e => setLocalGoals(prev => ({ ...prev, fixed: parseFloat(e.target.value) / 100 }))}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
@@ -202,7 +203,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         type="number"
                                         value={(localGoals.investments * 100).toFixed(0)}
                                         onChange={e => setLocalGoals(prev => ({ ...prev, investments: parseFloat(e.target.value) / 100 }))}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
@@ -214,7 +215,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         type="number"
                                         value={(localGoals.guiltyFree * 100).toFixed(0)}
                                         onChange={e => setLocalGoals(prev => ({ ...prev, guiltyFree: parseFloat(e.target.value) / 100 }))}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
@@ -226,7 +227,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         type="number"
                                         value={(localGoals.emergency * 100).toFixed(0)}
                                         onChange={e => setLocalGoals(prev => ({ ...prev, emergency: parseFloat(e.target.value) / 100 }))}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
@@ -245,12 +246,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 placeholder="Nova Categoria (ex: Presentes)"
                                 value={newCategory}
                                 onChange={e => setNewCategory(e.target.value)}
-                                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium placeholder:text-slate-400"
                             />
                             <select
                                 value={newPillar}
                                 onChange={e => setNewPillar(e.target.value as Pilar)}
-                                className="px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                className="px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-slate-900 font-medium"
                             >
                                 {PILLARS.map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
@@ -263,26 +264,51 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
 
                         <div className="space-y-6 max-h-80 overflow-y-auto pr-2">
-                            {Object.entries(localMapping).length === 0 && (
-                                <p className="text-center text-slate-500 text-sm font-medium">Nenhum mapeamento definido.</p>
-                            )}
-
                             {PILLARS.map(pillar => {
-                                const categoriesInPillar = Object.entries(localMapping).filter(([_, p]) => p === pillar);
-                                if (categoriesInPillar.length === 0) return null;
+                                // Combine default categories and local mappings
+                                const defaultCats = CATEGORIES.filter(c => c.pilar === pillar).map(c => c.name);
+                                const mappedCats = Object.entries(localMapping).filter(([_, p]) => p === pillar).map(([c]) => c);
+
+                                // Merge and deduplicate (local mapping takes precedence if we were tracking objects, but here we just list names)
+                                // Actually, if a default category is re-mapped, it should appear in the NEW pillar, not the old one.
+                                // So we need to iterate ALL categories and check their resolved pillar.
+
+                                const allCategoryNames = Array.from(new Set([...CATEGORIES.map(c => c.name), ...Object.keys(localMapping)]));
+
+                                const categoriesInThisPillar = allCategoryNames.filter(catName => {
+                                    const mappedPillar = localMapping[catName];
+                                    if (mappedPillar) return mappedPillar === pillar;
+
+                                    const defaultCat = CATEGORIES.find(c => c.name === catName);
+                                    return defaultCat?.pilar === pillar;
+                                }).sort();
+
+                                if (categoriesInThisPillar.length === 0) return null;
 
                                 return (
                                     <div key={pillar} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                        <h4 className="text-sm font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">{pillar}</h4>
+                                        <h4 className="text-sm font-bold text-slate-900 mb-3 border-b border-slate-200 pb-2">{pillar}</h4>
                                         <div className="space-y-2">
-                                            {categoriesInPillar.map(([cat]) => (
-                                                <div key={cat} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                                                    <span className="font-bold text-slate-700">{cat}</span>
-                                                    <button onClick={() => removeMapping(cat)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                            {categoriesInThisPillar.map((cat) => {
+                                                const isCustom = !!localMapping[cat];
+                                                const isDefault = CATEGORIES.some(c => c.name === cat);
+
+                                                return (
+                                                    <div key={cat} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-slate-800">{cat}</span>
+                                                            {isDefault && !isCustom && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">Padrão</span>}
+                                                            {isCustom && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">Personalizado</span>}
+                                                        </div>
+
+                                                        {isCustom && (
+                                                            <button onClick={() => removeMapping(cat)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded" title="Remover personalização">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 );
