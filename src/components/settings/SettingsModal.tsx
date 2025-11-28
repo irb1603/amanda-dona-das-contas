@@ -236,8 +236,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                     {/* Section 3: Category Mapping */}
                     <section>
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Mapeamento de Categorias</h3>
-                        <p className="text-sm text-slate-500 mb-4">Defina para qual pilar cada categoria deve ir automaticamente.</p>
+                        <h3 className="text-lg font-bold text-slate-900 mb-4">Mapeamento de Categorias</h3>
+                        <p className="text-sm text-slate-600 font-medium mb-4">Defina para qual pilar cada categoria deve ir automaticamente.</p>
 
                         <div className="flex gap-2 mb-4">
                             <input
@@ -262,21 +262,31 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             </button>
                         </div>
 
-                        <div className="bg-slate-50 rounded-xl p-4 space-y-2 max-h-60 overflow-y-auto">
+                        <div className="space-y-6 max-h-80 overflow-y-auto pr-2">
                             {Object.entries(localMapping).length === 0 && (
-                                <p className="text-center text-slate-400 text-sm">Nenhum mapeamento definido.</p>
+                                <p className="text-center text-slate-500 text-sm font-medium">Nenhum mapeamento definido.</p>
                             )}
-                            {Object.entries(localMapping).map(([cat, pil]) => (
-                                <div key={cat} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
-                                    <span className="font-medium text-slate-700">{cat}</span>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs px-2 py-1 bg-slate-100 rounded-full text-slate-600">{pil}</span>
-                                        <button onClick={() => removeMapping(cat)} className="text-red-400 hover:text-red-600">
-                                            <Trash2 size={16} />
-                                        </button>
+
+                            {PILLARS.map(pillar => {
+                                const categoriesInPillar = Object.entries(localMapping).filter(([_, p]) => p === pillar);
+                                if (categoriesInPillar.length === 0) return null;
+
+                                return (
+                                    <div key={pillar} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                        <h4 className="text-sm font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">{pillar}</h4>
+                                        <div className="space-y-2">
+                                            {categoriesInPillar.map(([cat]) => (
+                                                <div key={cat} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                                                    <span className="font-bold text-slate-700">{cat}</span>
+                                                    <button onClick={() => removeMapping(cat)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </section>
 

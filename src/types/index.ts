@@ -20,6 +20,7 @@ export interface Transaction {
     pilar?: Pilar; // Denormalized for easier querying
     paymentMethod: PaymentMethod;
     isFixed: boolean;
+    cardSource?: string; // 'BB', 'DUX', 'C6'
 
     // Installment specific
     installmentIndex?: number; // 1 for 1/10

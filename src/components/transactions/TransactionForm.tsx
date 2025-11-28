@@ -22,6 +22,7 @@ export default function TransactionForm() {
     const [type, setType] = useState<'income' | 'expense'>('expense');
     const [category, setCategory] = useState(CATEGORIES[0].id);
     const [paymentMethod, setPaymentMethod] = useState<Transaction['paymentMethod']>('debit_card');
+    const [cardSource, setCardSource] = useState('Cartão BB');
 
     // Complex Logic State
     const [isFixed, setIsFixed] = useState(false);
@@ -48,6 +49,7 @@ export default function TransactionForm() {
                     category,
                     pilar,
                     paymentMethod,
+                    cardSource: paymentMethod === 'credit_card' ? cardSource : undefined,
                     isFixed: false // Installments usually aren't "fixed" in the recurring sense, but could be. Let's assume false for now or independent.
                 }, installments, transactionDate);
             }
@@ -74,6 +76,7 @@ export default function TransactionForm() {
                     category,
                     pilar,
                     paymentMethod,
+                    cardSource: paymentMethod === 'credit_card' ? cardSource : undefined,
                     isFixed: false
                 };
                 await addDoc(collection(db, 'transactions'), newTransaction);
@@ -195,23 +198,45 @@ export default function TransactionForm() {
 
                 {/* Conditional: Installments */}
                 {paymentMethod === 'credit_card' && (
-                    <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-indigo-900">Parcelamento</label>
-                            <span className="text-xs text-indigo-600 font-medium">{installments}x de R$ {(amount / installments).toFixed(2)}</span>
+                    <div className="space-y-4">
+                        {/* Card Source Selection */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-800">Qual Cartão?</label>
+                            <div className="flex flex-wrap gap-2">
+                                {['Cartão BB', 'Cartão DUX', 'Cartão C6'].map((card) => (
+                                    <button
+                                        key={card}
+                                        type="button"
+                                        onClick={() => setCardSource(card)}
+                                        className={`px-4 py-2 rounded-lg text-sm border transition-colors ${cardSource === card
+                                            ? 'bg-indigo-900 text-white border-indigo-900'
+                                            : 'bg-white text-slate-700 font-medium border-slate-200 hover:border-slate-300'
+                                            }`}
+                                    >
+                                        {card}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <input
-                            type="range"
-                            min="1"
-                            max="24"
-                            value={installments}
-                            onChange={(e) => setInstallments(parseInt(e.target.value))}
-                            className="w-full accent-indigo-600"
-                        />
-                        <div className="flex justify-between text-xs text-indigo-400">
-                            <span>À vista</span>
-                            <span>12x</span>
-                            <span>24x</span>
+
+                        <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-indigo-900">Parcelamento</label>
+                                <span className="text-xs text-indigo-600 font-medium">{installments}x de R$ {(amount / installments).toFixed(2)}</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="1"
+                                max="24"
+                                value={installments}
+                                onChange={(e) => setInstallments(parseInt(e.target.value))}
+                                className="w-full accent-indigo-600"
+                            />
+                            <div className="flex justify-between text-xs text-indigo-400">
+                                <span>À vista</span>
+                                <span>12x</span>
+                                <span>24x</span>
+                            </div>
                         </div>
                     </div>
                 )}
