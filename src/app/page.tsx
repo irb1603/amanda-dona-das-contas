@@ -9,6 +9,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag } from 'lucide-react';
 import EditTransactionModal from '@/components/transactions/EditTransactionModal';
 import SettingsModal from '@/components/settings/SettingsModal';
+import EditBalanceModal from '@/components/dashboard/EditBalanceModal';
 import HighlightableText from '@/components/ui/HighlightableText';
 import { Transaction } from '@/types';
 
@@ -24,6 +25,7 @@ export default function Home() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
 
   const handleTransactionClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -77,7 +79,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Saldo (Balanço do Mês) */}
         <div
-          onClick={() => setIsSettingsOpen(true)}
+          onClick={() => setIsBalanceModalOpen(true)}
           className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-emerald-200 transition-colors group"
         >
           <div className="flex justify-between items-start">
@@ -350,6 +352,13 @@ export default function Home() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      <EditBalanceModal
+        isOpen={isBalanceModalOpen}
+        onClose={() => setIsBalanceModalOpen(false)}
+        currentBalance={currentBalance}
+        monthlyBalance={balance}
       />
     </div>
   );

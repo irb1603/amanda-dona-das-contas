@@ -21,8 +21,8 @@ export default function TransactionForm() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [type, setType] = useState<'income' | 'expense'>('expense');
     const [category, setCategory] = useState(CATEGORIES[0].id);
-    const [paymentMethod, setPaymentMethod] = useState<Transaction['paymentMethod']>('debit_card');
-    const [cardSource, setCardSource] = useState('Cartão BB');
+    const [paymentMethod, setPaymentMethod] = useState<Transaction['paymentMethod']>('credit_card');
+    const [cardSource, setCardSource] = useState('Cartão DUX');
 
     // Complex Logic State
     const [isFixed, setIsFixed] = useState(false);
@@ -176,48 +176,36 @@ export default function TransactionForm() {
                     <label className="text-sm font-bold text-slate-800">Forma de Pagamento</label>
                     <div className="flex flex-wrap gap-2">
                         {[
-                            { id: 'debit_card', label: 'Débito' },
-                            { id: 'credit_card', label: 'Crédito' },
-                            { id: 'pix', label: 'Pix' },
-                            { id: 'cash', label: 'Dinheiro' },
-                        ].map((method) => (
-                            <button
-                                key={method.id}
-                                type="button"
-                                onClick={() => setPaymentMethod(method.id as any)}
-                                className={`px-4 py-2 rounded-lg text-sm border transition-colors ${paymentMethod === method.id
-                                    ? 'bg-slate-900 text-white border-slate-900'
-                                    : 'bg-white text-slate-700 font-medium border-slate-200 hover:border-slate-300'
-                                    }`}
-                            >
-                                {method.label}
-                            </button>
-                        ))}
+                            { label: 'Cartão de crédito DUX', method: 'credit_card', source: 'Cartão DUX' },
+                            { label: 'Cartão de crédito C6', method: 'credit_card', source: 'Cartão C6' },
+                            { label: 'Cartão de crédito BB', method: 'credit_card', source: 'Cartão BB' },
+                            { label: 'Débito', method: 'debit_card', source: undefined },
+                        ].map((option) => {
+                            const isSelected = paymentMethod === option.method && (option.method !== 'credit_card' || cardSource === option.source);
+                            return (
+                                <button
+                                    key={option.label}
+                                    type="button"
+                                    onClick={() => {
+                                        setPaymentMethod(option.method as any);
+                                        if (option.source) setCardSource(option.source);
+                                    }}
+                                    className={`px-4 py-2 rounded-lg text-sm border transition-colors ${isSelected
+                                        ? 'bg-slate-900 text-white border-slate-900'
+                                        : 'bg-white text-slate-700 font-medium border-slate-200 hover:border-slate-300'
+                                        }`}
+                                >
+                                    {option.label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 {/* Conditional: Installments */}
                 {paymentMethod === 'credit_card' && (
                     <div className="space-y-4">
-                        {/* Card Source Selection */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-800">Qual Cartão?</label>
-                            <div className="flex flex-wrap gap-2">
-                                {['Cartão BB', 'Cartão DUX', 'Cartão C6'].map((card) => (
-                                    <button
-                                        key={card}
-                                        type="button"
-                                        onClick={() => setCardSource(card)}
-                                        className={`px-4 py-2 rounded-lg text-sm border transition-colors ${cardSource === card
-                                            ? 'bg-indigo-900 text-white border-indigo-900'
-                                            : 'bg-white text-slate-700 font-medium border-slate-200 hover:border-slate-300'
-                                            }`}
-                                    >
-                                        {card}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        {/* Card Source Selection Removed - Integrated above */}
 
                         <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 space-y-3">
                             <div className="flex items-center justify-between">
