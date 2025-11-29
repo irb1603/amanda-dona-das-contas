@@ -11,6 +11,7 @@ import EditTransactionModal from '@/components/transactions/EditTransactionModal
 import SettingsModal from '@/components/settings/SettingsModal';
 import EditBalanceModal from '@/components/dashboard/EditBalanceModal';
 import EditTargetModal from '@/components/dashboard/EditTargetModal';
+import EditIncomeSourcesModal from '@/components/dashboard/EditIncomeSourcesModal';
 import HighlightableText from '@/components/ui/HighlightableText';
 import { Transaction } from '@/types';
 
@@ -27,6 +28,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  const [isIncomeSourcesModalOpen, setIsIncomeSourcesModalOpen] = useState(false);
   const [editTargetModal, setEditTargetModal] = useState<{ isOpen: boolean; type: 'income' | 'expense' }>({ isOpen: false, type: 'income' });
 
   const handleTransactionClick = (transaction: Transaction) => {
@@ -67,27 +69,36 @@ export default function Home() {
 
   return (
     <div className="space-y-8 pb-24">
-      {/* Header with Month Selector */}
+      {/* Header with Month Selector and Settings */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Visão Geral</h1>
             <p className="text-slate-500">Acompanhe suas finanças</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-              <ChevronLeft size={24} className="text-slate-600" />
-            </button>
-            <div className="flex flex-col items-center min-w-[120px]">
-              <span className="text-lg font-bold text-slate-800 capitalize">
-                {selectedDate.toLocaleString('pt-BR', { month: 'long' })}
-              </span>
-              <span className="text-xs text-slate-500 font-medium">
-                {selectedDate.getFullYear()}
-              </span>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
+              <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <ChevronLeft size={24} className="text-slate-600" />
+              </button>
+              <div className="flex flex-col items-center min-w-[120px]">
+                <span className="text-lg font-bold text-slate-800 capitalize">
+                  {selectedDate.toLocaleString('pt-BR', { month: 'long' })}
+                </span>
+                <span className="text-xs text-slate-500 font-medium">
+                  {selectedDate.getFullYear()}
+                </span>
+              </div>
+              <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <ChevronRight size={24} className="text-slate-600" />
+              </button>
             </div>
-            <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-              <ChevronRight size={24} className="text-slate-600" />
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm"
+            >
+              <Settings size={18} />
+              <span className="text-sm font-medium">Configurações</span>
             </button>
           </div>
         </div>
@@ -118,7 +129,7 @@ export default function Home() {
 
         {/* Card 2: Receitas */}
         <div
-          onClick={() => setEditTargetModal({ isOpen: true, type: 'income' })}
+          onClick={() => setIsIncomeSourcesModalOpen(true)}
           className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-blue-200 transition-colors group"
         >
           <div className="flex items-center justify-between mb-4">
@@ -134,9 +145,20 @@ export default function Home() {
             <h3 className="text-2xl font-bold text-slate-800">
               {income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Meta: {incomeTarget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </p>
+            {incomeSources.length > 0 ? (
+              <div className="mt-2 space-y-1">
+                {incomeSources.slice(0, 2).map(source => (
+                  <p key={source.id} className="text-xs text-slate-500">
+                    {source.name}: {source.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                ))}
+                {incomeSources.length > 2 && (
+                  <p className="text-xs text-slate-400">+ {incomeSources.length - 2} fonte(s)</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 mt-1">Clique para adicionar fontes</p>
+            )}
           </div>
         </div>
 
@@ -357,6 +379,11 @@ export default function Home() {
         isOpen={editTargetModal.isOpen}
         onClose={() => setEditTargetModal({ isOpen: false, type: 'income' })}
         type={editTargetModal.type}
+      />
+
+      <EditIncomeSourcesModal
+        isOpen={isIncomeSourcesModalOpen}
+        onClose={() => setIsIncomeSourcesModalOpen(false)}
       />
     </div>
   );
