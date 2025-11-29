@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface CurrencyInputProps {
     value: number;
@@ -9,11 +9,20 @@ interface CurrencyInputProps {
 
 export default function CurrencyInput({ value, onChange, className = '', placeholder }: CurrencyInputProps) {
     const [displayValue, setDisplayValue] = useState('');
+    const isUserEditingRef = useRef(false);
+    const lastPropValueRef = useRef<number | null>(null);
 
     useEffect(() => {
-        // Format initial value
-        if (value !== undefined && value !== null) {
-            setDisplayValue(formatCurrency(value));
+        // Only update display value from props if:
+        // 1. User is not actively editing, OR
+        // 2. The prop value changed from an external source (not from user input)
+        const propValueChanged = lastPropValueRef.current !== value;
+
+        if (!isUserEditingRef.current || propValueChanged) {
+            if (value !== undefined && value !== null) {
+                setDisplayValue(formatCurrency(value));
+                lastPropValueRef.current = value;
+            }
         }
     }, [value]);
 
@@ -22,6 +31,7 @@ export default function CurrencyInput({ value, onChange, className = '', placeho
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        isUserEditingRef.current = true;
         const inputValue = e.target.value;
 
         // Remove all non-digits
@@ -30,16 +40,24 @@ export default function CurrencyInput({ value, onChange, className = '', placeho
         // Convert to number (divide by 100 to handle cents)
         const numberValue = parseInt(digits || '0', 10) / 100;
 
+        // Update display value immediately for smooth typing
+        setDisplayValue(formatCurrency(numberValue));
+
         // Update parent with the actual number
         onChange(numberValue);
 
-        // Update display with formatted string
-        // We don't update displayValue here directly because the useEffect will handle it
-        // based on the new 'value' prop coming back, BUT for smooth typing we might want to.
-        // However, relying on prop update is safer for consistency.
-        // Actually, for inputs, local state is often better to avoid cursor jumping, 
-        // but for a simple mask where the entire string is replaced, it's tricky.
-        // Let's rely on the prop update cycle for simplicity first.
+        // Update our tracking ref
+        lastPropValueRef.current = numberValue;
+    };
+
+    const handleBlur = () => {
+        // Reset editing flag when user leaves the field
+        isUserEditingRef.current = false;
+    };
+
+    const handleFocus = () => {
+        // Mark as editing when user focuses
+        isUserEditingRef.current = true;
     };
 
     return (
@@ -47,6 +65,8 @@ export default function CurrencyInput({ value, onChange, className = '', placeho
             type="text"
             value={displayValue}
             onChange={handleChange}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
             className={className}
             placeholder={placeholder}
         />

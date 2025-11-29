@@ -29,6 +29,18 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
 
     useEffect(() => {
         if (transaction) {
+            console.log('EditTransactionModal - Transaction data:', {
+                id: transaction.id,
+                description: transaction.description,
+                parentTransactionId: transaction.parentTransactionId,
+                totalInstallments: transaction.totalInstallments,
+                installmentIndex: transaction.installmentIndex,
+                hasParent: !!transaction.parentTransactionId,
+                hasTotal: !!transaction.totalInstallments,
+                isMultiple: transaction.totalInstallments ? transaction.totalInstallments > 1 : false,
+                shouldShowCheckbox: !!(transaction.parentTransactionId && transaction.totalInstallments && transaction.totalInstallments > 1)
+            });
+
             setFormData({
                 description: transaction.description,
                 amount: transaction.amount,
