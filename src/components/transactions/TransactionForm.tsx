@@ -49,11 +49,15 @@ export default function TransactionForm() {
             const pilar = selectedCategory?.pilar || 'Guilty-free';
             const amountValue = amount;
 
-            // Use the selected month from context, NOT the date field
-            // The date field is informative only
+            // Use the selected month from context for year/month, but keep the day from user input
             const year = selectedDate.getFullYear();
             const month = selectedDate.getMonth();
-            const transactionDate = new Date(year, month, 1);
+
+            // Get the day from the date input field
+            const [_, __, dayFromInput] = date.split('-').map(Number);
+
+            // Create date with selected month/year but user's chosen day
+            const transactionDate = new Date(year, month, dayFromInput);
 
             // Case 1: Credit Card Installments
             if (paymentMethod === 'credit_card' && installments > 1) {
