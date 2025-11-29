@@ -39,14 +39,25 @@ export async function createInstallmentTransactions(
         const transactionId = transactionRef.id;
         transactionIds.push(transactionId);
 
-        // Calculate date: start date + i months
-        const date = new Date(startDate);
-        date.setMonth(date.getMonth() + i);
+        // Calculate date: start date + i months (handling month boundaries correctly)
+        const year = startDate.getFullYear();
+        const month = startDate.getMonth();
+        const day = startDate.getDate();
+
+        // Add i months
+        const newYear = year + Math.floor((month + i) / 12);
+        const newMonth = (month + i) % 12;
+
+        // Get last day of target month to handle edge cases
+        const lastDayOfMonth = new Date(newYear, newMonth + 1, 0).getDate();
+        const newDay = Math.min(day, lastDayOfMonth);
+
+        const date = new Date(newYear, newMonth, newDay);
 
         const transaction: Transaction = {
             ...baseTransaction,
             amount: installmentValue, // Split amount
-            date: date,
+            date: date, // Firebase will convert Date to Timestamp
             installmentIndex: i + 1,
             totalInstallments: totalInstallments,
             parentTransactionId: parentTransactionId,
