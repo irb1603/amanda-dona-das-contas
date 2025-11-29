@@ -10,6 +10,7 @@ import { Transaction, RecurringRule } from '@/types';
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import CurrencyInput from '@/components/ui/CurrencyInput';
+import { parseDateStringToLocal } from '@/utils/dateUtils';
 
 export default function TransactionForm() {
     const router = useRouter();
@@ -37,7 +38,7 @@ export default function TransactionForm() {
             const selectedCategory = CATEGORIES.find(c => c.id === category);
             const pilar = selectedCategory?.pilar || 'Guilty-free';
             const amountValue = amount;
-            const transactionDate = new Date(date);
+            const transactionDate = parseDateStringToLocal(date);
 
             // Case 1: Credit Card Installments
             if (paymentMethod === 'credit_card' && installments > 1) {

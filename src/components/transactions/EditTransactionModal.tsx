@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 import { CATEGORIES } from '@/constants';
 import { modifyInstallmentCount } from '@/services/transactionService';
+import { parseDateStringToLocal } from '@/utils/dateUtils';
 
 interface EditTransactionModalProps {
     transaction: Transaction | null;
@@ -104,7 +105,7 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
                 const ref = doc(db, 'transactions', transaction.id!);
                 await updateDoc(ref, {
                     ...formData,
-                    date: new Date(formData.date),
+                    date: parseDateStringToLocal(formData.date),
                 });
             }
 
