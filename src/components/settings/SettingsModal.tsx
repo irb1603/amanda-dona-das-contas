@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
+import { useTransactions } from '@/hooks/useTransactions';
+import { useMonth } from '@/context/MonthContext';
 import { X, Save, Plus, Trash2, Wrench, Loader2 } from 'lucide-react';
-import { CATEGORIES } from '@/constants';
+import { CATEGORIES, PILARS } from '@/constants';
+import CurrencyInput from '@/components/ui/CurrencyInput';
 import { Pilar } from '@/types';
 import { removeDuplicateTransactions } from '@/services/transactionService';
 
@@ -25,14 +28,20 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         categoryBudgets, setCategoryBudgets
     } = useSettings();
 
+    const { selectedDate } = useMonth();
+    const currentYear = selectedDate.getFullYear();
+    const currentMonth = selectedDate.getMonth() + 1;
+    const { transactions } = useTransactions(currentYear, currentMonth);
+
     // Local state for form
+    const [activeTab, setActiveTab] = useState<'general' | 'categories'>('general');
     const [localGoals, setLocalGoals] = useState(pillarGoals);
     const [localMapping, setLocalMapping] = useState(categoryMapping);
-    const [localBudgets, setLocalBudgets] = useState(categoryBudgets);
+    const [localBudgets, setLocalBudgets] = useState<Record<string, number>>({}); // Initialized with empty object
     const [localIncomeTarget, setLocalIncomeTarget] = useState(incomeTarget);
     const [localExpenseTarget, setLocalExpenseTarget] = useState(expenseTarget);
-    const [localOpeningBalance, setLocalOpeningBalance] = useState(openingBalance);
-    const [localIncomeSources, setLocalIncomeSources] = useState(incomeSources);
+    const [localOpeningBalance, setLocalOpeningBalance] = useState(0); // Initialized with 0
+    const [localIncomeSources, setLocalIncomeSources] = useState<{ id: string; name: string; amount: number }[]>([]); // Initialized with empty array
 
     // New mapping entry state
     const [newCategory, setNewCategory] = useState('');

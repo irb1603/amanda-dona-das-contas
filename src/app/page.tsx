@@ -6,15 +6,16 @@ import Image from "next/image";
 import { useTransactions } from '@/hooks/useTransactions';
 import { useMonth } from '@/context/MonthContext';
 import { useSettings } from '@/context/SettingsContext';
-import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
 import EditTransactionModal from '@/components/transactions/EditTransactionModal';
 import SettingsModal from '@/components/settings/SettingsModal';
 import EditBalanceModal from '@/components/dashboard/EditBalanceModal';
+import EditTargetModal from '@/components/dashboard/EditTargetModal';
 import HighlightableText from '@/components/ui/HighlightableText';
 import { Transaction } from '@/types';
 
 export default function Home() {
-  const { selectedDate } = useMonth();
+  const { selectedDate, nextMonth, prevMonth } = useMonth();
   const { openingBalance, pillarGoals, incomeTarget, expenseTarget, incomeSources } = useSettings();
 
   const currentYear = selectedDate.getFullYear();
@@ -26,6 +27,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  const [editTargetModal, setEditTargetModal] = useState<{ isOpen: boolean; type: 'income' | 'expense' }>({ isOpen: false, type: 'income' });
 
   const handleTransactionClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -64,111 +66,101 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm"
-        >
-          <Settings size={18} />
-          <span className="text-sm font-medium">Configurações</span>
-        </button>
+    <div className="space-y-8 pb-24">
+      {/* Header with Month Selector */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Visão Geral</h1>
+            <p className="text-slate-500">Acompanhe suas finanças</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <ChevronLeft size={24} className="text-slate-600" />
+            </button>
+            <div className="flex flex-col items-center min-w-[120px]">
+              <span className="text-lg font-bold text-slate-800 capitalize">
+                {selectedDate.toLocaleString('pt-BR', { month: 'long' })}
+              </span>
+              <span className="text-xs text-slate-500 font-medium">
+                {selectedDate.getFullYear()}
+              </span>
+            </div>
+            <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <ChevronRight size={24} className="text-slate-600" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Saldo (Balanço do Mês) */}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: Saldo Atual */}
         <div
           onClick={() => setIsBalanceModalOpen(true)}
           className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-emerald-200 transition-colors group"
         >
-          <div className="flex justify-between items-start">
-            <p className="text-sm text-slate-600 mb-1 font-medium">Saldo Atual (Inicial + Mês)</p>
-            <Edit2 size={14} className="text-slate-300 group-hover:text-emerald-500" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-emerald-50 rounded-lg">
+              <Wallet className="text-emerald-600" size={24} />
+            </div>
+            <div className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <Edit2 size={16} className="text-slate-300 group-hover:text-emerald-500 transition-colors" />
+            </div>
           </div>
-          <p className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-            {currentBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-            Inicial: {openingBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </p>
+          <div>
+            <p className="text-sm text-slate-500 font-medium mb-1">Saldo Atual</p>
+            <h3 className="text-2xl font-bold text-slate-800">
+              {currentBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </h3>
+          </div>
         </div>
 
         {/* Card 2: Receitas */}
         <div
-          onClick={() => setIsSettingsOpen(true)}
-          className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-emerald-200 transition-colors group"
+          onClick={() => setEditTargetModal({ isOpen: true, type: 'income' })}
+          className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-blue-200 transition-colors group"
         >
-          <div className="flex justify-between items-start">
-            <p className="text-sm text-slate-600 mb-1 font-medium">Receitas</p>
-            <Edit2 size={14} className="text-slate-300 group-hover:text-emerald-500" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <TrendingUp className="text-blue-600" size={24} />
+            </div>
+            <div className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <Edit2 size={16} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <TrendingUp size={20} className="text-emerald-500" />
-            <p className="text-2xl font-bold text-slate-800">
+          <div>
+            <p className="text-sm text-slate-500 font-medium mb-1">Receitas</p>
+            <h3 className="text-2xl font-bold text-slate-800">
               {income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Meta: {incomeTarget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </p>
-          </div>
-
-          {/* Income Sources Preview */}
-          <div className="mt-3 space-y-1">
-            {incomeSources.slice(0, 3).map(source => (
-              <div key={source.id} className="flex justify-between text-[10px] text-slate-500">
-                <span>{source.name}</span>
-                <span>{source.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-              </div>
-            ))}
-            {incomeSources.length > 3 && (
-              <p className="text-[10px] text-slate-400 text-center">+ {incomeSources.length - 3} outras fontes</p>
-            )}
-            {incomeSources.length === 0 && incomeTarget > 0 && (
-              <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1">
-                <div
-                  className="h-1.5 rounded-full bg-emerald-500"
-                  style={{ width: `${Math.min((income / incomeTarget) * 100, 100)}%` }}
-                ></div>
-                <p className="text-[10px] text-slate-400 mt-1 text-right">Meta: {incomeTarget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Card 3: Despesas */}
         <div
-          onClick={() => setIsSettingsOpen(true)}
-          className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-emerald-200 transition-colors group"
+          onClick={() => setEditTargetModal({ isOpen: true, type: 'expense' })}
+          className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-red-200 transition-colors group"
         >
-          <div className="flex justify-between items-start">
-            <p className="text-sm text-slate-600 mb-1 font-medium">Despesas</p>
-            <Edit2 size={14} className="text-slate-300 group-hover:text-emerald-500" />
-          </div>
-          <div className="flex items-center gap-2">
-            <TrendingDown size={20} className="text-red-500" />
-            <p className="text-2xl font-bold text-slate-800">
-              {expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </p>
-          </div>
-          {expenseTarget > 0 && (
-            <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3">
-              <div
-                className={`h-1.5 rounded-full ${expense > expenseTarget ? 'bg-red-500' : 'bg-emerald-500'}`}
-                style={{ width: `${Math.min((expense / expenseTarget) * 100, 100)}%` }}
-              ></div>
-              <p className="text-[10px] text-slate-400 mt-1 text-right">Teto: {expenseTarget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-red-50 rounded-lg">
+              <TrendingDown className="text-red-600" size={24} />
             </div>
-          )}
-        </div>
-
-        {/* Card 4: Insight (Maior Gasto - Simplificado para Pilar mais alto) */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 bg-gradient-to-br from-indigo-50 to-white">
-          <p className="text-sm text-indigo-700 font-semibold mb-1">Gastos por Pilar</p>
-          <div className="text-xs space-y-1 mt-2">
-            {Object.entries(pillars).map(([pilar, amount]) => (
-              <div key={pilar} className="flex justify-between text-slate-700">
-                <span>{pilar}</span>
-                <span className="font-bold">{amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-              </div>
-            ))}
+            <div className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <Edit2 size={16} className="text-slate-300 group-hover:text-red-500 transition-colors" />
+            </div>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium mb-1">Despesas</p>
+            <h3 className="text-2xl font-bold text-slate-800">
+              {expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Teto: {expenseTarget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </p>
           </div>
         </div>
       </div>
@@ -307,37 +299,37 @@ export default function Home() {
         {/* Right Column: Recent Transactions */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-            <h3 className="font-bold text-slate-800 mb-4">Últimas Transações</h3>
-            <div className="space-y-3">
-              {transactions.slice(0, 5).map((t) => (
-                <div
-                  key={t.id}
-                  onClick={() => handleTransactionClick(t)}
-                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                      {t.type === 'income' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-800">{t.description}</p>
-                      <p className="text-xs text-slate-500">{t.category} • {t.date.toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-bold ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {t.type === 'income' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </p>
-                    {t.totalInstallments && (
-                      <p className="text-xs text-slate-500">{t.installmentIndex}/{t.totalInstallments}</p>
-                    )}
-                  </div>
+        <h3 className="font-bold text-slate-800 mb-4">Últimas Transações</h3>
+        <div className="space-y-3">
+          {transactions.slice(0, 5).map((t) => (
+            <div
+              key={t.id}
+              onClick={() => handleTransactionClick(t)}
+              className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                  {t.type === 'income' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                 </div>
-              ))}
-              {transactions.length === 0 && (
-                <p className="text-center text-slate-500 py-4">Nenhuma transação neste mês.</p>
-              )}
+                <div>
+                  <p className="font-medium text-slate-800">{t.description}</p>
+                  <p className="text-xs text-slate-500">{t.category} • {t.date.toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={`font-bold ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {t.type === 'income' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+                {t.totalInstallments && (
+                  <p className="text-xs text-slate-500">{t.installmentIndex}/{t.totalInstallments}</p>
+                )}
+              </div>
             </div>
+          ))}
+          {transactions.length === 0 && (
+            <p className="text-center text-slate-500 py-4">Nenhuma transação neste mês.</p>
+          )}
+          </div>
           </div>
         </div>
       </div>
@@ -359,6 +351,12 @@ export default function Home() {
         onClose={() => setIsBalanceModalOpen(false)}
         currentBalance={currentBalance}
         monthlyBalance={balance}
+      />
+
+      <EditTargetModal
+        isOpen={editTargetModal.isOpen}
+        onClose={() => setEditTargetModal({ isOpen: false, type: 'income' })}
+        type={editTargetModal.type}
       />
     </div>
   );

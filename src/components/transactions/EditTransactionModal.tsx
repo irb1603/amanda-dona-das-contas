@@ -21,6 +21,7 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
         date: '',
         category: '',
         paymentMethod: 'debit_card' as PaymentMethod,
+        cardSource: undefined as string | undefined,
     });
     const [loading, setLoading] = useState(false);
 
@@ -32,6 +33,7 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
                 date: transaction.date.toISOString().split('T')[0],
                 category: transaction.category,
                 paymentMethod: transaction.paymentMethod || 'debit_card',
+                cardSource: transaction.cardSource,
             });
         }
     }, [transaction]);
@@ -127,17 +129,31 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-800 mb-1">Forma de Pagamento</label>
-                        <select
-                            value={formData.paymentMethod}
-                            onChange={e => setFormData({ ...formData, paymentMethod: e.target.value as PaymentMethod })}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
-                        >
-                            <option value="credit_card">Cartão de Crédito</option>
-                            <option value="debit_card">Cartão de Débito</option>
-                            <option value="pix">Pix</option>
-                            <option value="cash">Dinheiro</option>
-                        </select>
+                        <label className="block text-sm font-bold text-slate-800 mb-2">Forma de Pagamento</label>
+                        <div className="flex flex-col gap-2">
+                            {[
+                                { id: 'dux', label: 'Cartão de crédito DUX', method: 'credit_card', source: 'Cartão DUX' },
+                                { id: 'c6', label: 'Cartão de crédito C6', method: 'credit_card', source: 'Cartão C6' },
+                                { id: 'bb', label: 'Cartão de crédito BB', method: 'credit_card', source: 'Cartão BB' },
+                                { id: 'debit', label: 'Débito', method: 'debit_card', source: undefined },
+                            ].map((option) => (
+                                <button
+                                    key={option.id}
+                                    onClick={() => setFormData({
+                                        ...formData,
+                                        paymentMethod: option.method as PaymentMethod,
+                                        cardSource: option.source
+                                    })}
+                                    className={`w-full p-3 rounded-xl border text-left transition-all ${((formData.paymentMethod === 'credit_card' && formData.cardSource === option.source) ||
+                                        (formData.paymentMethod === 'debit_card' && option.method === 'debit_card'))
+                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold ring-1 ring-emerald-500'
+                                        : 'border-slate-200 hover:border-emerald-200 hover:bg-slate-50 text-slate-600'
+                                        }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
