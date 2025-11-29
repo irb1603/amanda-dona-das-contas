@@ -309,7 +309,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                                                         <div className="flex items-center gap-2">
                                                             <div className="flex items-center gap-1">
-                                                                <span className="text-xs text-slate-400 font-medium">Meta:</span>
+                                                                <span className="text-xs text-slate-400 font-medium">Limite:</span>
                                                                 <input
                                                                     type="number"
                                                                     value={budget}

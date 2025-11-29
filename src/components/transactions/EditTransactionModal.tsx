@@ -20,8 +20,8 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
         amount: 0,
         date: '',
         category: '',
-        paymentMethod: 'debit_card' as PaymentMethod,
-        cardSource: undefined as string | undefined,
+        paymentMethod: 'credit_card' as PaymentMethod,
+        cardSource: 'Cartão DUX' as string | undefined,
     });
     const [loading, setLoading] = useState(false);
 

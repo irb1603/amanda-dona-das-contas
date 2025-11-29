@@ -12,6 +12,7 @@ import SettingsModal from '@/components/settings/SettingsModal';
 import EditBalanceModal from '@/components/dashboard/EditBalanceModal';
 import EditTargetModal from '@/components/dashboard/EditTargetModal';
 import EditIncomeSourcesModal from '@/components/dashboard/EditIncomeSourcesModal';
+import EditIncomeModal from '@/components/dashboard/EditIncomeModal';
 import HighlightableText from '@/components/ui/HighlightableText';
 import { Transaction } from '@/types';
 
@@ -29,6 +30,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
   const [isIncomeSourcesModalOpen, setIsIncomeSourcesModalOpen] = useState(false);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [editTargetModal, setEditTargetModal] = useState<{ isOpen: boolean; type: 'income' | 'expense' }>({ isOpen: false, type: 'income' });
 
   const handleTransactionClick = (transaction: Transaction) => {
@@ -128,16 +130,10 @@ export default function Home() {
         </div>
 
         {/* Card 2: Receitas */}
-        <div
-          onClick={() => setIsIncomeSourcesModalOpen(true)}
-          className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-blue-200 transition-colors group"
-        >
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-50 rounded-lg">
               <TrendingUp className="text-blue-600" size={24} />
-            </div>
-            <div className="p-2 hover:bg-slate-50 rounded-full transition-colors">
-              <Edit2 size={16} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
             </div>
           </div>
           <div>
@@ -145,20 +141,22 @@ export default function Home() {
             <h3 className="text-2xl font-bold text-slate-800">
               {income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
-            {incomeSources.length > 0 ? (
-              <div className="mt-2 space-y-1">
-                {incomeSources.slice(0, 2).map(source => (
-                  <p key={source.id} className="text-xs text-slate-500">
-                    {source.name}: {source.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </p>
-                ))}
-                {incomeSources.length > 2 && (
-                  <p className="text-xs text-slate-400">+ {incomeSources.length - 2} fonte(s)</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-400 mt-1">Clique para adicionar fontes</p>
-            )}
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => setIsIncomeModalOpen(true)}
+                className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+              >
+                <Edit2 size={12} />
+                Editar Valor
+              </button>
+              <button
+                onClick={() => setIsIncomeSourcesModalOpen(true)}
+                className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 border border-blue-200"
+              >
+                <Settings size={12} />
+                Fontes
+              </button>
+            </div>
           </div>
         </div>
 
@@ -384,6 +382,14 @@ export default function Home() {
       <EditIncomeSourcesModal
         isOpen={isIncomeSourcesModalOpen}
         onClose={() => setIsIncomeSourcesModalOpen(false)}
+      />
+
+      <EditIncomeModal
+        isOpen={isIncomeModalOpen}
+        onClose={() => setIsIncomeModalOpen(false)}
+        currentIncome={income}
+        currentYear={currentYear}
+        currentMonth={currentMonth}
       />
     </div>
   );
