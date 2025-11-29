@@ -41,4 +41,6 @@ export interface RecurringRule {
     startDate: Date;
     endDate?: Date; // If null, infinite
     isActive: boolean;
+    paymentMethod?: PaymentMethod;
+    cardSource?: string;
 }

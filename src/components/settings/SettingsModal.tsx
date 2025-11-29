@@ -21,12 +21,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         incomeTarget, setIncomeTarget,
         expenseTarget, setExpenseTarget,
         openingBalance, setOpeningBalance,
-        incomeSources, setIncomeSources
+        incomeSources, setIncomeSources,
+        categoryBudgets, setCategoryBudgets
     } = useSettings();
 
     // Local state for form
     const [localGoals, setLocalGoals] = useState(pillarGoals);
     const [localMapping, setLocalMapping] = useState(categoryMapping);
+    const [localBudgets, setLocalBudgets] = useState(categoryBudgets);
     const [localIncomeTarget, setLocalIncomeTarget] = useState(incomeTarget);
     const [localExpenseTarget, setLocalExpenseTarget] = useState(expenseTarget);
     const [localOpeningBalance, setLocalOpeningBalance] = useState(openingBalance);
@@ -45,16 +47,18 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         if (isOpen) {
             setLocalGoals(pillarGoals);
             setLocalMapping(categoryMapping);
+            setLocalBudgets(categoryBudgets);
             setLocalIncomeTarget(incomeTarget);
             setLocalExpenseTarget(expenseTarget);
             setLocalOpeningBalance(openingBalance);
             setLocalIncomeSources(incomeSources);
         }
-    }, [isOpen, pillarGoals, categoryMapping, incomeTarget, expenseTarget, openingBalance, incomeSources]);
+    }, [isOpen, pillarGoals, categoryMapping, categoryBudgets, incomeTarget, expenseTarget, openingBalance, incomeSources]);
 
     const handleSave = () => {
         setPillarGoals(localGoals);
         setCategoryMapping(localMapping);
+        setCategoryBudgets(localBudgets);
         setIncomeTarget(localIncomeSources.reduce((acc, s) => acc + s.amount, 0)); // Auto-update income target based on sources
         setExpenseTarget(localExpenseTarget);
         setOpeningBalance(localOpeningBalance);
@@ -235,10 +239,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
                     </section>
 
-                    {/* Section 3: Category Mapping */}
+                    {/* Section 3: Category Mapping & Budgets */}
                     <section>
-                        <h3 className="text-lg font-bold text-slate-900 mb-4">Mapeamento de Categorias</h3>
-                        <p className="text-sm text-slate-600 font-medium mb-4">Defina para qual pilar cada categoria deve ir automaticamente.</p>
+                        <h3 className="text-lg font-bold text-slate-900 mb-4">Mapeamento e Orçamentos</h3>
+                        <p className="text-sm text-slate-600 font-medium mb-4">Defina o pilar e o limite de orçamento para cada categoria.</p>
 
                         <div className="flex gap-2 mb-4">
                             <input
@@ -265,14 +269,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                         <div className="space-y-6 max-h-80 overflow-y-auto pr-2">
                             {PILLARS.map(pillar => {
-                                // Combine default categories and local mappings
-                                const defaultCats = CATEGORIES.filter(c => c.pilar === pillar).map(c => c.name);
-                                const mappedCats = Object.entries(localMapping).filter(([_, p]) => p === pillar).map(([c]) => c);
-
-                                // Merge and deduplicate (local mapping takes precedence if we were tracking objects, but here we just list names)
-                                // Actually, if a default category is re-mapped, it should appear in the NEW pillar, not the old one.
-                                // So we need to iterate ALL categories and check their resolved pillar.
-
                                 const allCategoryNames = Array.from(new Set([...CATEGORIES.map(c => c.name), ...Object.keys(localMapping)]));
 
                                 const categoriesInThisPillar = allCategoryNames.filter(catName => {
@@ -292,20 +288,34 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             {categoriesInThisPillar.map((cat) => {
                                                 const isCustom = !!localMapping[cat];
                                                 const isDefault = CATEGORIES.some(c => c.name === cat);
+                                                const budget = localBudgets[cat] || 0;
 
                                                 return (
                                                     <div key={cat} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-2 flex-1">
                                                             <span className="font-bold text-slate-800">{cat}</span>
                                                             {isDefault && !isCustom && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">Padrão</span>}
                                                             {isCustom && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">Personalizado</span>}
                                                         </div>
 
-                                                        {isCustom && (
-                                                            <button onClick={() => removeMapping(cat)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded" title="Remover personalização">
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-xs text-slate-400 font-medium">Meta:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={budget}
+                                                                    onChange={e => setLocalBudgets(prev => ({ ...prev, [cat]: parseFloat(e.target.value) || 0 }))}
+                                                                    className="w-24 px-2 py-1 border border-slate-200 rounded text-sm text-right font-medium text-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none"
+                                                                    placeholder="0,00"
+                                                                />
+                                                            </div>
+
+                                                            {isCustom && (
+                                                                <button onClick={() => removeMapping(cat)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded" title="Remover personalização">
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 );
                                             })}

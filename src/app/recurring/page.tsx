@@ -8,6 +8,8 @@ import EditTransactionModal from '@/components/transactions/EditTransactionModal
 import HighlightableText from '@/components/ui/HighlightableText';
 import { Transaction } from '@/types';
 
+import { CATEGORIES } from '@/constants';
+
 export default function RecurringPage() {
     const { selectedDate } = useMonth();
     const currentYear = selectedDate.getFullYear();
@@ -17,14 +19,28 @@ export default function RecurringPage() {
 
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [filter, setFilter] = useState<'all' | 'Cartão DUX' | 'Cartão C6' | 'Cartão BB' | 'Débito'>('all');
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
     const handleTransactionClick = (transaction: Transaction) => {
         setSelectedTransaction(transaction);
         setIsModalOpen(true);
     };
 
-    // Filter: Expenses that ARE fixed
-    const fixedExpenses = transactions.filter(t => t.type === 'expense' && t.isFixed);
+    // Filter: Expenses that ARE fixed AND match the selected filter
+    const fixedExpenses = transactions.filter(t => {
+        if (t.type !== 'expense' || !t.isFixed) return false;
+        if (filter !== 'all') {
+            if (filter === 'Débito') {
+                if (t.paymentMethod !== 'debit_card') return false;
+            } else {
+                if (t.cardSource !== filter) return false;
+            }
+        }
+        if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
+        return true;
+    });
+
     const totalFixed = fixedExpenses.reduce((acc, t) => acc + t.amount, 0);
 
     if (loading) {
@@ -34,6 +50,8 @@ export default function RecurringPage() {
             </div>
         );
     }
+
+    const sortedCategories = [...CATEGORIES].sort((a, b) => a.name.localeCompare(b.name));
 
     return (
         <div className="space-y-6">
@@ -50,6 +68,43 @@ export default function RecurringPage() {
                 </div>
             </div>
 
+            {/* Filters */}
+            <div className="flex flex-col md:flex-row gap-4">
+                {/* Payment Method Filter */}
+                <div className="flex gap-2 overflow-x-auto pb-2 flex-1">
+                    {[
+                        { id: 'all', label: 'Todos' },
+                        { id: 'Cartão DUX', label: 'DUX' },
+                        { id: 'Cartão C6', label: 'C6' },
+                        { id: 'Cartão BB', label: 'BB' },
+                        { id: 'Débito', label: 'Débito' },
+                    ].map((opt) => (
+                        <button
+                            key={opt.id}
+                            onClick={() => setFilter(opt.id as any)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${filter === opt.id
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                }`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Category Filter */}
+                <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white min-w-[200px]"
+                >
+                    <option value="all">Todas as Categorias</option>
+                    {sortedCategories.map(cat => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                </select>
+            </div>
+
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
@@ -58,6 +113,7 @@ export default function RecurringPage() {
                                 <th className="px-4 py-3">Data</th>
                                 <th className="px-4 py-3">Descrição</th>
                                 <th className="px-4 py-3">Categoria</th>
+                                <th className="px-4 py-3">Pagamento</th>
                                 <th className="px-4 py-3 text-right">Valor</th>
                             </tr>
                         </thead>
@@ -79,6 +135,11 @@ export default function RecurringPage() {
                                         <Tag size={14} />
                                         <HighlightableText text={t.category} />
                                     </td>
+                                    <td className="px-4 py-3 text-xs text-slate-500">
+                                        {t.paymentMethod === 'credit_card'
+                                            ? t.cardSource?.replace('Cartão ', '')
+                                            : 'Débito'}
+                                    </td>
                                     <td className="px-4 py-3 text-right font-bold text-slate-800">
                                         {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </td>
@@ -86,8 +147,8 @@ export default function RecurringPage() {
                             ))}
                             {fixedExpenses.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
-                                        Nenhuma despesa fixa neste mês.
+                                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                                        Nenhuma despesa fixa encontrada para este filtro.
                                     </td>
                                 </tr>
                             )}

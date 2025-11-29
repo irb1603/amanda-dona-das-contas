@@ -146,7 +146,8 @@ export async function generateRecurringTransactions(
             type: 'expense', // Assuming fixed expenses are expenses
             category: rule.category,
             pilar: rule.pilar,
-            paymentMethod: 'debit_card', // Default or from rule
+            paymentMethod: rule.paymentMethod || 'debit_card',
+            cardSource: rule.cardSource,
             isFixed: true,
             recurringRuleId: ruleId
         };

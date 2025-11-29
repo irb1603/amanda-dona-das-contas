@@ -19,6 +19,8 @@ interface SettingsContextType {
     setPillarGoals: (goals: PillarGoals) => void;
     categoryMapping: Record<string, Pilar>;
     setCategoryMapping: (mapping: Record<string, Pilar>) => void;
+    categoryBudgets: Record<string, number>;
+    setCategoryBudgets: (budgets: Record<string, number>) => void;
     incomeTarget: number;
     setIncomeTarget: (value: number) => void;
     expenseTarget: number;
@@ -38,6 +40,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         emergency: 0.05,
     });
     const [categoryMapping, setCategoryMapping] = useState<Record<string, Pilar>>({});
+    const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>({});
     const [incomeTarget, setIncomeTarget] = useState(0);
     const [expenseTarget, setExpenseTarget] = useState(0);
     const [incomeSources, setIncomeSources] = useState<{ id: string; name: string; amount: number }[]>([]);
@@ -55,6 +58,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                 setOpeningBalance(data.openingBalance || 0);
                 setPillarGoals(data.pillarGoals || { fixed: 0.65, investments: 0.15, guiltyFree: 0.15, emergency: 0.05 });
                 setCategoryMapping(data.categoryMapping || {});
+                setCategoryBudgets(data.categoryBudgets || {});
                 setIncomeTarget(data.incomeTarget || 0);
                 setExpenseTarget(data.expenseTarget || 0);
                 setIncomeSources(data.incomeSources || []);
@@ -63,15 +67,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                 const savedBalance = localStorage.getItem('openingBalance');
                 const savedGoals = localStorage.getItem('pillarGoals');
                 const savedMapping = localStorage.getItem('categoryMapping');
+                const savedBudgets = localStorage.getItem('categoryBudgets');
                 const savedIncomeTarget = localStorage.getItem('incomeTarget');
                 const savedExpenseTarget = localStorage.getItem('expenseTarget');
                 const savedIncomeSources = localStorage.getItem('incomeSources');
 
-                if (savedBalance || savedGoals || savedMapping || savedIncomeTarget || savedExpenseTarget || savedIncomeSources) {
+                if (savedBalance || savedGoals || savedMapping || savedBudgets || savedIncomeTarget || savedExpenseTarget || savedIncomeSources) {
                     const initialData = {
                         openingBalance: savedBalance ? parseFloat(savedBalance) : 0,
                         pillarGoals: savedGoals ? JSON.parse(savedGoals) : { fixed: 0.65, investments: 0.15, guiltyFree: 0.15, emergency: 0.05 },
                         categoryMapping: savedMapping ? JSON.parse(savedMapping) : {},
+                        categoryBudgets: savedBudgets ? JSON.parse(savedBudgets) : {},
                         incomeTarget: savedIncomeTarget ? parseFloat(savedIncomeTarget) : 0,
                         expenseTarget: savedExpenseTarget ? parseFloat(savedExpenseTarget) : 0,
                         incomeSources: savedIncomeSources ? JSON.parse(savedIncomeSources) : []
@@ -121,6 +127,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setDoc(doc(db, 'settings', SETTINGS_DOC_ID), { categoryMapping: mapping }, { merge: true });
     };
 
+    const updateCategoryBudgets = (budgets: Record<string, number>) => {
+        setCategoryBudgets(budgets);
+        setDoc(doc(db, 'settings', SETTINGS_DOC_ID), { categoryBudgets: budgets }, { merge: true });
+    };
+
     const updateIncomeTarget = (value: number) => {
         setIncomeTarget(value);
         setDoc(doc(db, 'settings', SETTINGS_DOC_ID), { incomeTarget: value }, { merge: true });
@@ -141,6 +152,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             openingBalance, setOpeningBalance: updateOpeningBalance,
             pillarGoals, setPillarGoals: updatePillarGoals,
             categoryMapping, setCategoryMapping: updateCategoryMapping,
+            categoryBudgets, setCategoryBudgets: updateCategoryBudgets,
             incomeTarget, setIncomeTarget: updateIncomeTarget,
             expenseTarget, setExpenseTarget: updateExpenseTarget,
             incomeSources, setIncomeSources: updateIncomeSources

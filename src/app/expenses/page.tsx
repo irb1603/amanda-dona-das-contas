@@ -8,6 +8,8 @@ import EditTransactionModal from '@/components/transactions/EditTransactionModal
 import HighlightableText from '@/components/ui/HighlightableText';
 import { Transaction } from '@/types';
 
+import { CATEGORIES } from '@/constants';
+
 export default function ExpensesPage() {
     const { selectedDate } = useMonth();
     const currentYear = selectedDate.getFullYear();
@@ -17,14 +19,20 @@ export default function ExpensesPage() {
 
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
     const handleTransactionClick = (transaction: Transaction) => {
         setSelectedTransaction(transaction);
         setIsModalOpen(true);
     };
 
-    // Filter: Expenses that are NOT fixed
-    const variableExpenses = transactions.filter(t => t.type === 'expense' && !t.isFixed);
+    // Filter: Expenses that are NOT fixed AND match category filter
+    const variableExpenses = transactions.filter(t => {
+        if (t.type !== 'expense' || t.isFixed) return false;
+        if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
+        return true;
+    });
+
     const totalVariable = variableExpenses.reduce((acc, t) => acc + t.amount, 0);
 
     if (loading) {
@@ -34,6 +42,8 @@ export default function ExpensesPage() {
             </div>
         );
     }
+
+    const sortedCategories = [...CATEGORIES].sort((a, b) => a.name.localeCompare(b.name));
 
     return (
         <div className="space-y-6">
@@ -48,6 +58,20 @@ export default function ExpensesPage() {
                         {totalVariable.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </p>
                 </div>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex justify-start">
+                <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium focus:ring-2 focus:ring-red-500 outline-none bg-white min-w-[200px]"
+                >
+                    <option value="all">Todas as Categorias</option>
+                    {sortedCategories.map(cat => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                </select>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -87,7 +111,7 @@ export default function ExpensesPage() {
                             {variableExpenses.length === 0 && (
                                 <tr>
                                     <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
-                                        Nenhuma despesa variável neste mês.
+                                        Nenhuma despesa variável encontrada para este filtro.
                                     </td>
                                 </tr>
                             )}
