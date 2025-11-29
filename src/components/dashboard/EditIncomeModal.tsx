@@ -156,6 +156,20 @@ export default function EditIncomeModal({ isOpen, onClose, currentIncome, curren
                 </div>
 
                 <div className="space-y-4">
+                    {/* Loading State */}
+                    {loading && incomeTransactions.length === 0 && (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="animate-spin text-blue-600" size={32} />
+                        </div>
+                    )}
+
+                    {/* Empty State */}
+                    {!loading && incomeTransactions.length === 0 && !addingNew && (
+                        <div className="text-center py-8">
+                            <p className="text-slate-500 mb-4">Nenhuma receita cadastrada neste mês</p>
+                        </div>
+                    )}
+
                     {/* Existing Income Transactions */}
                     {incomeTransactions.map((transaction) => (
                         editingId === transaction.id ? (

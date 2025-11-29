@@ -6,6 +6,7 @@ import { Transaction, PaymentMethod } from '@/types';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import CurrencyInput from '@/components/ui/CurrencyInput';
+import { CATEGORIES } from '@/constants';
 
 interface EditTransactionModalProps {
     transaction: Transaction | null;
@@ -120,12 +121,17 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
 
                     <div>
                         <label className="block text-sm font-bold text-slate-800 mb-1">Categoria</label>
-                        <input
-                            type="text"
+                        <select
                             value={formData.category}
                             onChange={e => setFormData({ ...formData, category: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800"
-                        />
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800 bg-white"
+                        >
+                            {CATEGORIES.map((cat) => (
+                                <option key={cat.id} value={cat.name}>
+                                    {cat.name} ({cat.pilar})
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
