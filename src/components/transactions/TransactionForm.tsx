@@ -146,7 +146,12 @@ export default function TransactionForm() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-800">Data</label>
+                        <label className="text-sm font-bold text-slate-800">
+                            Data da Transação
+                            {paymentMethod === 'credit_card' && installments > 1 && (
+                                <span className="ml-2 text-xs font-normal text-blue-600">(1ª parcela)</span>
+                            )}
+                        </label>
                         <input
                             required
                             type="date"
@@ -154,6 +159,11 @@ export default function TransactionForm() {
                             onChange={(e) => setDate(e.target.value)}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800"
                         />
+                        {paymentMethod === 'credit_card' && installments > 1 && (
+                            <p className="text-xs text-slate-500">
+                                As parcelas seguintes serão criadas nos meses seguintes a partir desta data
+                            </p>
+                        )}
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-800">Categoria</label>
