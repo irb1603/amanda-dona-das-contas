@@ -25,6 +25,13 @@ export default function Home() {
 
   const { transactions, loading, error, income, expense, balance, pillars } = useTransactions(currentYear, currentMonth);
 
+  // Get previous month's balance
+  const previousDate = new Date(selectedDate);
+  previousDate.setMonth(previousDate.getMonth() - 1);
+  const previousYear = previousDate.getFullYear();
+  const previousMonth = previousDate.getMonth() + 1;
+  const { balance: previousMonthBalance } = useTransactions(previousYear, previousMonth);
+
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -141,6 +148,9 @@ export default function Home() {
             <h3 className="text-2xl font-bold text-slate-800">
               {income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Saldo mês anterior: {(openingBalance + previousMonthBalance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </p>
             <div className="mt-3 flex gap-2">
               <button
                 onClick={() => setIsIncomeModalOpen(true)}

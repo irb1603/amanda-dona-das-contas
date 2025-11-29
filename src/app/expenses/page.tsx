@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useMonth } from '@/context/MonthContext';
+import { useSearch } from '@/context/SearchContext';
 import { Wallet, Calendar, Loader2, Tag } from 'lucide-react';
 import EditTransactionModal from '@/components/transactions/EditTransactionModal';
 import HighlightableText from '@/components/ui/HighlightableText';
@@ -16,6 +17,7 @@ export default function ExpensesPage() {
     const currentMonth = selectedDate.getMonth() + 1;
 
     const { transactions, loading } = useTransactions(currentYear, currentMonth);
+    const { searchTerm } = useSearch();
 
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,6 +32,15 @@ export default function ExpensesPage() {
     const variableExpenses = transactions.filter(t => {
         if (t.type !== 'expense' || t.isFixed) return false;
         if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
+
+        // Filter by search term
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const matchesDescription = t.description.toLowerCase().includes(term);
+            const matchesCategory = t.category.toLowerCase().includes(term);
+            if (!matchesDescription && !matchesCategory) return false;
+        }
+
         return true;
     });
 
