@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMonth } from '@/context/MonthContext';
 import { CATEGORIES, PILARS } from '@/constants';
 import { createInstallmentTransactions, generateRecurringTransactions } from '@/services/transactionService';
 import { db } from '@/lib/firebase';
@@ -10,16 +11,17 @@ import { Transaction, RecurringRule } from '@/types';
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import CurrencyInput from '@/components/ui/CurrencyInput';
-import { parseDateStringToLocal } from '@/utils/dateUtils';
+import { parseDateStringToLocal, formatDateForInput } from '@/utils/dateUtils';
 
 export default function TransactionForm() {
     const router = useRouter();
+    const { selectedDate } = useMonth();
     const [loading, setLoading] = useState(false);
 
     // Form State
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState(0);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState('');
     const [type, setType] = useState<'income' | 'expense'>('expense');
     const [category, setCategory] = useState(CATEGORIES[0].id);
     const [paymentMethod, setPaymentMethod] = useState<Transaction['paymentMethod']>('credit_card');
@@ -30,6 +32,14 @@ export default function TransactionForm() {
     const [installments, setInstallments] = useState(1);
     const [isRecurring, setIsRecurring] = useState(false); // For manual recurring setup
 
+    // Set default date to day 01 of the viewed month
+    useEffect(() => {
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        setDate(formatDateForInput(firstDay));
+    }, [selectedDate]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -38,7 +48,12 @@ export default function TransactionForm() {
             const selectedCategory = CATEGORIES.find(c => c.id === category);
             const pilar = selectedCategory?.pilar || 'Guilty-free';
             const amountValue = amount;
-            const transactionDate = parseDateStringToLocal(date);
+
+            // Use the selected month from context, NOT the date field
+            // The date field is informative only
+            const year = selectedDate.getFullYear();
+            const month = selectedDate.getMonth();
+            const transactionDate = new Date(year, month, 1);
 
             // Case 1: Credit Card Installments
             if (paymentMethod === 'credit_card' && installments > 1) {

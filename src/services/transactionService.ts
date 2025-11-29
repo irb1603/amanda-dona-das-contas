@@ -221,8 +221,17 @@ export async function generateRecurringTransactions(
     }
 
     for (let i = 0; i < monthsToGenerate; i++) {
-        const date = new Date(rule.startDate);
-        date.setMonth(date.getMonth() + i);
+        // Calculate date properly to handle month boundaries
+        const year = rule.startDate.getFullYear();
+        const month = rule.startDate.getMonth();
+        const day = rule.startDate.getDate();
+
+        const newYear = year + Math.floor((month + i) / 12);
+        const newMonth = (month + i) % 12;
+        const lastDayOfMonth = new Date(newYear, newMonth + 1, 0).getDate();
+        const newDay = Math.min(day, lastDayOfMonth);
+
+        const date = new Date(newYear, newMonth, newDay);
 
         // Stop if we exceed the rule's end date (if it exists)
         if (rule.endDate && date > rule.endDate) break;
