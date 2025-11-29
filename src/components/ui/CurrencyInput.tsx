@@ -18,18 +18,9 @@ export default function CurrencyInput({ value, onChange, className = '', placeho
         // 2. The prop value changed from an external source (not from user input)
         const propValueChanged = lastPropValueRef.current !== value;
 
-        console.log('CurrencyInput useEffect:', {
-            value,
-            lastPropValue: lastPropValueRef.current,
-            propValueChanged,
-            isUserEditing: isUserEditingRef.current,
-            willUpdate: !isUserEditingRef.current || propValueChanged
-        });
-
         if (!isUserEditingRef.current || propValueChanged) {
             if (value !== undefined && value !== null) {
                 const formatted = formatCurrency(value);
-                console.log('CurrencyInput: Setting display value to:', formatted);
                 setDisplayValue(formatted);
                 lastPropValueRef.current = value;
             }
@@ -41,11 +32,6 @@ export default function CurrencyInput({ value, onChange, className = '', placeho
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('CurrencyInput handleChange:', {
-            inputValue: e.target.value,
-            wasEditing: isUserEditingRef.current
-        });
-
         isUserEditingRef.current = true;
         const inputValue = e.target.value;
 
@@ -54,8 +40,6 @@ export default function CurrencyInput({ value, onChange, className = '', placeho
 
         // Convert to number (divide by 100 to handle cents)
         const numberValue = parseInt(digits || '0', 10) / 100;
-
-        console.log('CurrencyInput: Parsed value:', { digits, numberValue });
 
         // Update display value immediately for smooth typing
         const formatted = formatCurrency(numberValue);
@@ -69,13 +53,11 @@ export default function CurrencyInput({ value, onChange, className = '', placeho
     };
 
     const handleBlur = () => {
-        console.log('CurrencyInput: onBlur - stopping edit mode');
         // Reset editing flag when user leaves the field
         isUserEditingRef.current = false;
     };
 
     const handleFocus = () => {
-        console.log('CurrencyInput: onFocus - starting edit mode');
         // Mark as editing when user focuses
         isUserEditingRef.current = true;
     };

@@ -7,6 +7,7 @@ import { doc, updateDoc, deleteDoc, query, collection, where, getDocs, Timestamp
 import { db } from '@/lib/firebase';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 import { CATEGORIES } from '@/constants';
+import { modifyInstallmentCount } from '@/services/transactionService';
 
 interface EditTransactionModalProps {
     transaction: Transaction | null;
@@ -26,21 +27,10 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
     });
     const [loading, setLoading] = useState(false);
     const [updateAllInstallments, setUpdateAllInstallments] = useState(false);
+    const [newInstallmentCount, setNewInstallmentCount] = useState(1);
 
     useEffect(() => {
         if (transaction) {
-            console.log('EditTransactionModal - Transaction data:', {
-                id: transaction.id,
-                description: transaction.description,
-                parentTransactionId: transaction.parentTransactionId,
-                totalInstallments: transaction.totalInstallments,
-                installmentIndex: transaction.installmentIndex,
-                hasParent: !!transaction.parentTransactionId,
-                hasTotal: !!transaction.totalInstallments,
-                isMultiple: transaction.totalInstallments ? transaction.totalInstallments > 1 : false,
-                shouldShowCheckbox: !!(transaction.parentTransactionId && transaction.totalInstallments && transaction.totalInstallments > 1)
-            });
-
             setFormData({
                 description: transaction.description,
                 amount: transaction.amount,
@@ -49,6 +39,9 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
                 paymentMethod: transaction.paymentMethod || 'debit_card',
                 cardSource: transaction.cardSource,
             });
+
+            // Set initial installment count
+            setNewInstallmentCount(transaction.totalInstallments || 1);
         }
     }, [transaction]);
 
@@ -59,31 +52,53 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
         try {
             // If this is an installment and user wants to update all
             if (updateAllInstallments && transaction.parentTransactionId) {
-                // Find all installments with the same parentTransactionId
-                const q = query(
-                    collection(db, 'transactions'),
-                    where('parentTransactionId', '==', transaction.parentTransactionId)
-                );
-                const snapshot = await getDocs(q);
+                const baseDescription = formData.description.split(' (')[0];
 
-                // Update all installments
-                const updatePromises = snapshot.docs.map(async (docSnap) => {
-                    const installmentData = docSnap.data() as Transaction;
-                    const installmentRef = doc(db, 'transactions', docSnap.id);
+                // Check if installment count changed
+                const installmentCountChanged = newInstallmentCount !== transaction.totalInstallments;
 
-                    // Split amount equally among installments
-                    const installmentAmount = formData.amount / (transaction.totalInstallments || 1);
+                if (installmentCountChanged) {
+                    // Use the new modifyInstallmentCount function
+                    await modifyInstallmentCount(
+                        transaction.parentTransactionId,
+                        newInstallmentCount,
+                        formData.amount,
+                        baseDescription,
+                        {
+                            type: transaction.type,
+                            category: formData.category,
+                            pilar: transaction.pilar,
+                            paymentMethod: formData.paymentMethod,
+                            cardSource: formData.cardSource,
+                            isFixed: transaction.isFixed
+                        }
+                    );
+                } else {
+                    // Just update existing installments without changing count
+                    const q = query(
+                        collection(db, 'transactions'),
+                        where('parentTransactionId', '==', transaction.parentTransactionId)
+                    );
+                    const snapshot = await getDocs(q);
 
-                    await updateDoc(installmentRef, {
-                        description: `${formData.description.split(' (')[0]} (${installmentData.installmentIndex}/${installmentData.totalInstallments})`,
-                        amount: installmentAmount,
-                        category: formData.category,
-                        paymentMethod: formData.paymentMethod,
-                        cardSource: formData.cardSource,
+                    const updatePromises = snapshot.docs.map(async (docSnap) => {
+                        const installmentData = docSnap.data() as Transaction;
+                        const installmentRef = doc(db, 'transactions', docSnap.id);
+
+                        // Split amount equally among installments
+                        const installmentAmount = formData.amount / (transaction.totalInstallments || 1);
+
+                        await updateDoc(installmentRef, {
+                            description: `${baseDescription} (${installmentData.installmentIndex}/${installmentData.totalInstallments})`,
+                            amount: installmentAmount,
+                            category: formData.category,
+                            paymentMethod: formData.paymentMethod,
+                            cardSource: formData.cardSource,
+                        });
                     });
-                });
 
-                await Promise.all(updatePromises);
+                    await Promise.all(updatePromises);
+                }
             } else {
                 // Update only this transaction
                 const ref = doc(db, 'transactions', transaction.id!);
@@ -208,23 +223,77 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
 
                     {/* Installment Update Option */}
                     {transaction.parentTransactionId && transaction.totalInstallments && transaction.totalInstallments > 1 && (
-                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={updateAllInstallments}
-                                    onChange={e => setUpdateAllInstallments(e.target.checked)}
-                                    className="mt-1 w-4 h-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
-                                />
-                                <div className="flex-1">
-                                    <p className="font-medium text-slate-800 text-sm">
-                                        Atualizar todas as {transaction.totalInstallments} parcelas
-                                    </p>
-                                    <p className="text-xs text-slate-600 mt-1">
-                                        Isso atualizará a descrição, valor, categoria e forma de pagamento de todas as parcelas desta compra
-                                    </p>
+                        <div className="space-y-3">
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={updateAllInstallments}
+                                        onChange={e => setUpdateAllInstallments(e.target.checked)}
+                                        className="mt-1 w-4 h-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+                                    />
+                                    <div className="flex-1">
+                                        <p className="font-medium text-slate-800 text-sm">
+                                            Atualizar todas as {transaction.totalInstallments} parcelas
+                                        </p>
+                                        <p className="text-xs text-slate-600 mt-1">
+                                            Isso atualizará a descrição, valor, categoria e forma de pagamento de todas as parcelas desta compra
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {/* Installment Count Slider - shown when checkbox is checked */}
+                            {updateAllInstallments && (
+                                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-medium text-indigo-900">
+                                            Quantidade de Parcelas
+                                        </label>
+                                        <div className="text-right">
+                                            <span className="text-lg font-bold text-indigo-700">
+                                                {newInstallmentCount}x
+                                            </span>
+                                            <span className="text-xs text-indigo-600 ml-2">
+                                                de {(formData.amount / newInstallmentCount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="24"
+                                        value={newInstallmentCount}
+                                        onChange={(e) => setNewInstallmentCount(parseInt(e.target.value))}
+                                        className="w-full accent-indigo-600"
+                                    />
+
+                                    <div className="flex justify-between text-xs text-indigo-400">
+                                        <span>1x</span>
+                                        <span>12x</span>
+                                        <span>24x</span>
+                                    </div>
+
+                                    {/* Warning messages */}
+                                    {newInstallmentCount !== transaction.totalInstallments && (
+                                        <div className={`p-3 rounded-lg text-xs ${newInstallmentCount > transaction.totalInstallments
+                                            ? 'bg-green-50 border border-green-200 text-green-700'
+                                            : 'bg-amber-50 border border-amber-200 text-amber-700'
+                                            }`}>
+                                            {newInstallmentCount > transaction.totalInstallments ? (
+                                                <>
+                                                    ✅ Serão criadas <strong>{newInstallmentCount - transaction.totalInstallments}</strong> novas parcelas nos próximos meses
+                                                </>
+                                            ) : (
+                                                <>
+                                                    ⚠️ Atenção: <strong>{transaction.totalInstallments - newInstallmentCount}</strong> parcelas futuras serão deletadas
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                            </label>
+                            )}
                         </div>
                     )}
                 </div>

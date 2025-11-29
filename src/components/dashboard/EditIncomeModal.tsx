@@ -130,11 +130,6 @@ export default function EditIncomeModal({ isOpen, onClose, currentIncome, curren
 
 
     const startEdit = (transaction: Transaction & { id: string }) => {
-        console.log('EditIncomeModal startEdit:', {
-            transactionId: transaction.id,
-            amount: transaction.amount,
-            description: transaction.description
-        });
         setEditingId(transaction.id);
         setEditAmount(transaction.amount);
         setEditDescription(transaction.description);
