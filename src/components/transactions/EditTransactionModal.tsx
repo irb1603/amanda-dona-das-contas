@@ -51,12 +51,12 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
         setLoading(true);
 
         try {
-            // If this is an installment and user wants to update all
-            if (updateAllInstallments && transaction.parentTransactionId) {
+            // If this is an installment, automatically update all future installments
+            if (transaction.parentTransactionId && transaction.installmentIndex) {
                 const baseDescription = formData.description.split(' (')[0];
 
                 // Check if installment count changed
-                const installmentCountChanged = newInstallmentCount !== transaction.totalInstallments;
+                const installmentCountChanged = updateAllInstallments && newInstallmentCount !== transaction.totalInstallments;
 
                 if (installmentCountChanged) {
                     // Use the new modifyInstallmentCount function
@@ -75,38 +75,62 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
                         }
                     );
                 } else {
-                    // Just update existing installments without changing count
+                    // Update current and all future installments
                     const q = query(
                         collection(db, 'transactions'),
                         where('parentTransactionId', '==', transaction.parentTransactionId)
                     );
                     const snapshot = await getDocs(q);
 
-                    const updatePromises = snapshot.docs.map(async (docSnap) => {
-                        const installmentData = docSnap.data() as Transaction;
-                        const installmentRef = doc(db, 'transactions', docSnap.id);
+                    const updatePromises = snapshot.docs
+                        .filter((docSnap) => {
+                            const installmentData = docSnap.data() as Transaction;
+                            // Only update current and future installments
+                            return (installmentData.installmentIndex || 0) >= (transaction.installmentIndex || 0);
+                        })
+                        .map(async (docSnap) => {
+                            const installmentData = docSnap.data() as Transaction;
+                            const installmentRef = doc(db, 'transactions', docSnap.id);
 
-                        // Split amount equally among installments
-                        const installmentAmount = formData.amount / (transaction.totalInstallments || 1);
+                            // Split amount equally among total installments
+                            const installmentAmount = formData.amount / (transaction.totalInstallments || 1);
 
-                        await updateDoc(installmentRef, {
-                            description: `${baseDescription} (${installmentData.installmentIndex}/${installmentData.totalInstallments})`,
-                            amount: installmentAmount,
-                            category: formData.category,
-                            paymentMethod: formData.paymentMethod,
-                            cardSource: formData.cardSource,
+                            // Prepare update data
+                            const updateData: any = {
+                                description: `${baseDescription} (${installmentData.installmentIndex}/${installmentData.totalInstallments})`,
+                                amount: installmentAmount,
+                                category: formData.category,
+                                paymentMethod: formData.paymentMethod,
+                            };
+
+                            // Only add cardSource if it exists
+                            if (formData.cardSource) {
+                                updateData.cardSource = formData.cardSource;
+                            }
+
+                            await updateDoc(installmentRef, updateData);
                         });
-                    });
 
                     await Promise.all(updatePromises);
                 }
             } else {
-                // Update only this transaction
+                // Update only this transaction (not an installment)
                 const ref = doc(db, 'transactions', transaction.id!);
-                await updateDoc(ref, {
+
+                // Prepare update data
+                const updateData: any = {
                     ...formData,
                     date: parseDateStringToLocal(formData.date),
+                };
+
+                // Remove undefined fields
+                Object.keys(updateData).forEach(key => {
+                    if (updateData[key] === undefined) {
+                        delete updateData[key];
+                    }
                 });
+
+                await updateDoc(ref, updateData);
             }
 
             onUpdate();
@@ -226,19 +250,29 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
                     {transaction.parentTransactionId && transaction.totalInstallments && transaction.totalInstallments > 1 && (
                         <div className="space-y-3">
                             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <p className="font-medium text-slate-800 text-sm">
+                                    📝 Edição de Parcelamento
+                                </p>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    As alterações serão aplicadas automaticamente nesta parcela e em todas as parcelas futuras
+                                </p>
+                            </div>
+
+                            {/* Installment Count Slider */}
+                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-3">
                                 <label className="flex items-start gap-3 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={updateAllInstallments}
                                         onChange={e => setUpdateAllInstallments(e.target.checked)}
-                                        className="mt-1 w-4 h-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+                                        className="mt-1 w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500"
                                     />
                                     <div className="flex-1">
                                         <p className="font-medium text-slate-800 text-sm">
-                                            Atualizar todas as {transaction.totalInstallments} parcelas
+                                            Alterar quantidade de parcelas
                                         </p>
                                         <p className="text-xs text-slate-600 mt-1">
-                                            Isso atualizará a descrição, valor, categoria e forma de pagamento de todas as parcelas desta compra
+                                            Marque para adicionar ou remover parcelas desta compra
                                         </p>
                                     </div>
                                 </label>
