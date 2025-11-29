@@ -23,7 +23,7 @@ export default function TransactionForm() {
     const [amount, setAmount] = useState(0);
     const [date, setDate] = useState('');
     const [type, setType] = useState<'income' | 'expense'>('expense');
-    const [category, setCategory] = useState(CATEGORIES[0].id);
+    const [category, setCategory] = useState(CATEGORIES[0].name);
     const [paymentMethod, setPaymentMethod] = useState<Transaction['paymentMethod']>('credit_card');
     const [cardSource, setCardSource] = useState('Cartão DUX');
 
@@ -45,7 +45,7 @@ export default function TransactionForm() {
         setLoading(true);
 
         try {
-            const selectedCategory = CATEGORIES.find(c => c.id === category);
+            const selectedCategory = CATEGORIES.find(c => c.name === category);
             const pilar = selectedCategory?.pilar || 'Guilty-free';
             const amountValue = amount;
 
@@ -212,7 +212,7 @@ export default function TransactionForm() {
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-medium text-slate-800"
                         >
                             {CATEGORIES.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
+                                <option key={cat.id} value={cat.name}>
                                     {cat.name} ({cat.pilar})
                                 </option>
                             ))}
