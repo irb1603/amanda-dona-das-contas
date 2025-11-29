@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useMonth } from '@/context/MonthContext';
-import { X, Save, Plus, Trash2, Wrench, Loader2 } from 'lucide-react';
+import { X, Save, Plus, Trash2, Wrench, Loader2, Edit2, Check } from 'lucide-react';
 import { CATEGORIES, PILARS } from '@/constants';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 import { Pilar } from '@/types';
@@ -45,8 +45,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     // New mapping entry state
     const [newCategory, setNewCategory] = useState('');
-
     const [newPillar, setNewPillar] = useState<Pilar>('Despesas Fixas');
+
+    // Edit mode state
+    const [editingCategory, setEditingCategory] = useState<string | null>(null);
+    const [editCategoryName, setEditCategoryName] = useState('');
+    const [editCategoryPilar, setEditCategoryPilar] = useState<Pilar>('Despesas Fixas');
 
     // Cleanup state
     const [isCleaning, setIsCleaning] = useState(false);
@@ -86,6 +90,45 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         const newMap = { ...localMapping };
         delete newMap[category];
         setLocalMapping(newMap);
+    };
+
+    const startEditCategory = (category: string, currentPilar: Pilar) => {
+        setEditingCategory(category);
+        setEditCategoryName(category);
+        setEditCategoryPilar(currentPilar);
+    };
+
+    const saveEditCategory = () => {
+        if (!editingCategory || !editCategoryName.trim()) return;
+
+        // If name changed, we need to update the mapping
+        if (editCategoryName !== editingCategory) {
+            const newMap = { ...localMapping };
+            const newBudgets = { ...localBudgets };
+
+            // Remove old entry
+            delete newMap[editingCategory];
+            const oldBudget = newBudgets[editingCategory] || 0;
+            delete newBudgets[editingCategory];
+
+            // Add new entry
+            newMap[editCategoryName] = editCategoryPilar;
+            newBudgets[editCategoryName] = oldBudget;
+
+            setLocalMapping(newMap);
+            setLocalBudgets(newBudgets);
+        } else {
+            // Just update the pilar
+            setLocalMapping({ ...localMapping, [editCategoryName]: editCategoryPilar });
+        }
+
+        setEditingCategory(null);
+        setEditCategoryName('');
+    };
+
+    const cancelEditCategory = () => {
+        setEditingCategory(null);
+        setEditCategoryName('');
     };
 
     const handleCleanup = async () => {
@@ -299,6 +342,48 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 const isDefault = CATEGORIES.some(c => c.name === cat);
                                                 const budget = localBudgets[cat] || 0;
 
+                                                if (editingCategory === cat) {
+                                                    // Edit mode
+                                                    return (
+                                                        <div key={cat} className="bg-emerald-50 p-3 rounded-lg border-2 border-emerald-500 shadow-sm space-y-2">
+                                                            <div className="flex gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editCategoryName}
+                                                                    onChange={e => setEditCategoryName(e.target.value)}
+                                                                    className="flex-1 px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-800"
+                                                                    placeholder="Nome da categoria"
+                                                                />
+                                                                <select
+                                                                    value={editCategoryPilar}
+                                                                    onChange={e => setEditCategoryPilar(e.target.value as Pilar)}
+                                                                    className="px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-700"
+                                                                >
+                                                                    {PILLARS.map(p => (
+                                                                        <option key={p} value={p}>{p}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            <div className="flex gap-2 justify-end">
+                                                                <button
+                                                                    onClick={cancelEditCategory}
+                                                                    className="px-3 py-1 text-xs bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+                                                                >
+                                                                    <X size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={saveEditCategory}
+                                                                    className="px-3 py-1 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <Check size={14} />
+                                                                    Salvar
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // Normal view mode
                                                 return (
                                                     <div key={cat} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                                                         <div className="flex items-center gap-2 flex-1">
@@ -318,6 +403,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                                     placeholder="0,00"
                                                                 />
                                                             </div>
+
+                                                            <button
+                                                                onClick={() => startEditCategory(cat, pillar)}
+                                                                className="text-blue-500 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
+                                                                title="Editar categoria"
+                                                            >
+                                                                <Edit2 size={16} />
+                                                            </button>
 
                                                             {isCustom && (
                                                                 <button onClick={() => removeMapping(cat)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded" title="Remover personalização">
