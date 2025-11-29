@@ -54,8 +54,13 @@ export async function createInstallmentTransactions(
 
         const date = new Date(newYear, newMonth, newDay);
 
+        // Remove undefined fields from baseTransaction
+        const cleanBaseTransaction = Object.fromEntries(
+            Object.entries(baseTransaction).filter(([_, v]) => v !== undefined)
+        ) as Omit<Transaction, 'id' | 'installmentIndex' | 'totalInstallments' | 'parentTransactionId'>;
+
         const transaction: Transaction = {
-            ...baseTransaction,
+            ...cleanBaseTransaction,
             amount: installmentValue, // Split amount
             date: date, // Firebase will convert Date to Timestamp
             installmentIndex: i + 1,
@@ -139,8 +144,13 @@ export async function modifyInstallmentCount(
 
             const date = new Date(newYear, newMonth, newDay);
 
+            // Remove undefined fields from baseTransactionData
+            const cleanBaseData = Object.fromEntries(
+                Object.entries(baseTransactionData).filter(([_, v]) => v !== undefined)
+            );
+
             const newInstallment: Transaction = {
-                ...baseTransactionData,
+                ...cleanBaseData,
                 amount: newInstallmentValue,
                 date: date,
                 installmentIndex: i + 1,
@@ -262,7 +272,7 @@ export async function generateRecurringTransactions(
             category: rule.category,
             pilar: rule.pilar,
             paymentMethod: rule.paymentMethod || 'debit_card',
-            cardSource: rule.cardSource,
+            ...(rule.cardSource && { cardSource: rule.cardSource }),
             isFixed: true,
             recurringRuleId: ruleId
         };

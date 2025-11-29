@@ -57,7 +57,7 @@ export default function TransactionForm() {
 
             // Case 1: Credit Card Installments
             if (paymentMethod === 'credit_card' && installments > 1) {
-                await createInstallmentTransactions({
+                const baseTransactionData: any = {
                     description,
                     amount: amountValue,
                     date: transactionDate,
@@ -65,26 +65,40 @@ export default function TransactionForm() {
                     category,
                     pilar,
                     paymentMethod,
-                    cardSource: paymentMethod === 'credit_card' ? cardSource : undefined,
-                    isFixed: false // Installments usually aren't "fixed" in the recurring sense, but could be. Let's assume false for now or independent.
-                }, installments, transactionDate);
+                    isFixed: false
+                };
+
+                // Only add cardSource if it's a credit card
+                if (paymentMethod === 'credit_card') {
+                    baseTransactionData.cardSource = cardSource;
+                }
+
+                await createInstallmentTransactions(baseTransactionData, installments, transactionDate);
             }
             // Case 2: Recurring Rule (Fixed Expense)
             else if (isFixed || isRecurring) {
-                const rule: RecurringRule = {
+                const rule: any = {
                     description,
                     amount: amountValue,
                     category,
                     pilar,
                     frequency: 'monthly',
                     startDate: transactionDate,
-                    isActive: true
+                    isActive: true,
+                    paymentMethod,
+                    type
                 };
+
+                // Only add cardSource if it's a credit card
+                if (paymentMethod === 'credit_card') {
+                    rule.cardSource = cardSource;
+                }
+
                 await generateRecurringTransactions(rule);
             }
             // Case 3: Simple Transaction
             else {
-                const newTransaction: Transaction = {
+                const newTransaction: any = {
                     description,
                     amount: amountValue,
                     date: transactionDate,
@@ -92,9 +106,14 @@ export default function TransactionForm() {
                     category,
                     pilar,
                     paymentMethod,
-                    cardSource: paymentMethod === 'credit_card' ? cardSource : undefined,
                     isFixed: false
                 };
+
+                // Only add cardSource if it's a credit card
+                if (paymentMethod === 'credit_card') {
+                    newTransaction.cardSource = cardSource;
+                }
+
                 await addDoc(collection(db, 'transactions'), newTransaction);
             }
 
