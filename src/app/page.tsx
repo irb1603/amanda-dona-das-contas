@@ -6,13 +6,14 @@ import Image from "next/image";
 import { useTransactions } from '@/hooks/useTransactions';
 import { useMonth } from '@/context/MonthContext';
 import { useSettings } from '@/context/SettingsContext';
-import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag, ChevronLeft, ChevronRight, Wallet, Copy } from 'lucide-react';
 import EditTransactionModal from '@/components/transactions/EditTransactionModal';
 import SettingsModal from '@/components/settings/SettingsModal';
 import EditBalanceModal from '@/components/dashboard/EditBalanceModal';
 import EditTargetModal from '@/components/dashboard/EditTargetModal';
 import EditIncomeSourcesModal from '@/components/dashboard/EditIncomeSourcesModal';
 import EditIncomeModal from '@/components/dashboard/EditIncomeModal';
+import DuplicateDetectorModal from '@/components/transactions/DuplicateDetectorModal';
 import HighlightableText from '@/components/ui/HighlightableText';
 import { Transaction } from '@/types';
 
@@ -38,6 +39,7 @@ export default function Home() {
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
   const [isIncomeSourcesModalOpen, setIsIncomeSourcesModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [isDuplicateDetectorOpen, setIsDuplicateDetectorOpen] = useState(false);
   const [editTargetModal, setEditTargetModal] = useState<{ isOpen: boolean; type: 'income' | 'expense' }>({ isOpen: false, type: 'income' });
 
   const handleTransactionClick = (transaction: Transaction) => {
@@ -102,13 +104,23 @@ export default function Home() {
                 <ChevronRight size={24} className="text-slate-600" />
               </button>
             </div>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm"
-            >
-              <Settings size={18} />
-              <span className="text-sm font-medium">Configurações</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsDuplicateDetectorOpen(true)}
+                className="flex items-center gap-2 text-slate-600 hover:text-amber-600 transition-colors bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm"
+                title="Detectar duplicatas"
+              >
+                <Copy size={18} />
+                <span className="text-sm font-medium hidden sm:inline">Duplicatas</span>
+              </button>
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm"
+              >
+                <Settings size={18} />
+                <span className="text-sm font-medium">Configurações</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -400,6 +412,13 @@ export default function Home() {
         currentIncome={income}
         currentYear={currentYear}
         currentMonth={currentMonth}
+      />
+
+      <DuplicateDetectorModal
+        isOpen={isDuplicateDetectorOpen}
+        onClose={() => setIsDuplicateDetectorOpen(false)}
+        transactions={transactions.filter(t => t.id) as (Transaction & { id: string })[]}
+        onUpdate={() => window.location.reload()}
       />
     </div>
   );
