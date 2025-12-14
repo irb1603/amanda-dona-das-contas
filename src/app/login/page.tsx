@@ -20,6 +20,9 @@ export default function LoginPage() {
         if (password === '841159') {
             // Set cookie
             document.cookie = "auth_token=valid; path=/; max-age=31536000"; // 1 year
+            // Small delay to ensure cookie is set before navigation
+            await new Promise(resolve => setTimeout(resolve, 100));
+            // Use router for better Next.js integration
             router.push('/');
         } else {
             setError('Senha incorreta');

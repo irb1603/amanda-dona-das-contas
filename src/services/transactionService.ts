@@ -63,6 +63,7 @@ export async function createInstallmentTransactions(
             ...cleanBaseTransaction,
             amount: installmentValue, // Split amount
             date: date, // Firebase will convert Date to Timestamp
+            createdAt: new Date(),
             installmentIndex: i + 1,
             totalInstallments: totalInstallments,
             parentTransactionId: parentTransactionId,
@@ -153,6 +154,7 @@ export async function modifyInstallmentCount(
                 ...cleanBaseData,
                 amount: newInstallmentValue,
                 date: date,
+                createdAt: new Date(),
                 installmentIndex: i + 1,
                 totalInstallments: newTotalInstallments,
                 parentTransactionId: parentTransactionId,
@@ -268,6 +270,7 @@ export async function generateRecurringTransactions(
             description: rule.description,
             amount: rule.amount,
             date: date,
+            createdAt: new Date(),
             type: 'expense', // Assuming fixed expenses are expenses
             category: rule.category,
             pilar: rule.pilar,

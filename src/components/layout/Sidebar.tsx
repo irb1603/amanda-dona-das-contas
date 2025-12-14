@@ -6,6 +6,7 @@ import { Home, CreditCard, DollarSign, Repeat, PieChart, Upload } from 'lucide-r
 const menuItems = [
     { name: 'Dashboard', icon: Home, href: '/' },
     { name: 'Cartão de Crédito', icon: CreditCard, href: '/credit-card' },
+    { name: 'Débito', icon: CreditCard, href: '/debit' }, // Using CreditCard icon for now, or maybe Wallet?
     { name: 'Despesas Avulsas', icon: DollarSign, href: '/expenses' },
     { name: 'Despesas Fixas', icon: Repeat, href: '/recurring' },
     { name: 'Importar Dados', icon: Upload, href: '/import' },

@@ -23,16 +23,19 @@ export default function CreditCardPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [filter, setFilter] = useState<'all' | 'Cartão DUX' | 'Cartão C6' | 'Cartão BB'>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [typeFilter, setTypeFilter] = useState<'all' | 'fixed' | 'variable'>('all');
 
     const handleTransactionClick = (transaction: Transaction) => {
         setSelectedTransaction(transaction);
         setIsModalOpen(true);
     };
 
-    const creditTransactions = transactions.filter(t => {
+    const creditTransactions = transactions.filter((t: Transaction) => {
         if (t.paymentMethod !== 'credit_card') return false;
         if (filter !== 'all' && t.cardSource !== filter) return false;
         if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
+        if (typeFilter === 'fixed' && !t.isFixed) return false;
+        if (typeFilter === 'variable' && t.isFixed) return false;
 
         // Filter by search term
         if (searchTerm) {
@@ -45,7 +48,7 @@ export default function CreditCardPage() {
         return true;
     });
 
-    const totalInvoice = creditTransactions.reduce((acc, t) => acc + t.amount, 0);
+    const totalInvoice = creditTransactions.reduce((acc: number, t: Transaction) => acc + t.amount, 0);
 
     if (loading) {
         return (
@@ -98,6 +101,28 @@ export default function CreditCardPage() {
                     ))}
                 </div>
 
+                {/* Type Filter (Fixed/Variable) */}
+                <div className="flex gap-2 p-1 bg-slate-100 rounded-lg self-start">
+                    <button
+                        onClick={() => setTypeFilter('all')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${typeFilter === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Todas
+                    </button>
+                    <button
+                        onClick={() => setTypeFilter('fixed')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${typeFilter === 'fixed' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Fixas
+                    </button>
+                    <button
+                        onClick={() => setTypeFilter('variable')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${typeFilter === 'variable' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Avulsas
+                    </button>
+                </div>
+
                 {/* Category Filter */}
                 <select
                     value={categoryFilter}
@@ -125,7 +150,7 @@ export default function CreditCardPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {creditTransactions.map((t) => (
+                            {creditTransactions.map((t: Transaction) => (
                                 <tr
                                     key={t.id}
                                     onClick={() => handleTransactionClick(t)}

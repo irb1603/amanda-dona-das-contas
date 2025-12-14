@@ -158,83 +158,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
 
                 <div className="p-6 space-y-8">
-                    {/* Section 1: Financial Targets & Income Sources */}
-                    <section>
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Metas e Fontes de Renda</h3>
 
-                        {/* Basic Targets */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-800 mb-1">Saldo Inicial</label>
-                                <input
-                                    type="number"
-                                    value={localOpeningBalance}
-                                    onChange={e => setLocalOpeningBalance(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-800 mb-1">Teto de Gastos</label>
-                                <input
-                                    type="number"
-                                    value={localExpenseTarget}
-                                    onChange={e => setLocalExpenseTarget(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 font-medium"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Income Sources List */}
-                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                            <h4 className="text-sm font-bold text-slate-800 mb-3">Fontes de Renda (Salários, Extras...)</h4>
-                            <div className="space-y-3">
-                                {localIncomeSources.map((source, index) => (
-                                    <div key={source.id} className="flex gap-2 items-center">
-                                        <input
-                                            type="text"
-                                            value={source.name}
-                                            onChange={e => {
-                                                const newSources = [...localIncomeSources];
-                                                newSources[index].name = e.target.value;
-                                                setLocalIncomeSources(newSources);
-                                            }}
-                                            placeholder="Nome (ex: Salário A)"
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 font-medium"
-                                        />
-                                        <input
-                                            type="number"
-                                            value={source.amount}
-                                            onChange={e => {
-                                                const newSources = [...localIncomeSources];
-                                                newSources[index].amount = parseFloat(e.target.value) || 0;
-                                                setLocalIncomeSources(newSources);
-                                            }}
-                                            placeholder="Valor"
-                                            className="w-32 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 font-medium"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                const newSources = localIncomeSources.filter(s => s.id !== source.id);
-                                                setLocalIncomeSources(newSources);
-                                            }}
-                                            className="text-red-400 hover:text-red-600 p-1"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                                <button
-                                    onClick={() => setLocalIncomeSources([...localIncomeSources, { id: Date.now().toString(), name: '', amount: 0 }])}
-                                    className="text-sm text-emerald-600 font-medium flex items-center gap-1 hover:text-emerald-700"
-                                >
-                                    <Plus size={16} /> Adicionar Fonte de Renda
-                                </button>
-                            </div>
-                            <div className="mt-3 text-right">
-                                <p className="text-xs text-slate-500">Total Previsto: {localIncomeSources.reduce((acc, s) => acc + s.amount, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            </div>
-                        </div>
-                    </section>
 
                     {/* Section 2: Pillar Goals */}
                     <section>
@@ -428,27 +352,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
                     </section>
 
-                    {/* Section 4: Maintenance */}
-                    <section>
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Manutenção</h3>
-                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-700">Corrigir Duplicatas</h4>
-                                <p className="text-xs text-slate-500">Remove transações fixas duplicadas (mesmo mês/ano).</p>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <button
-                                    onClick={handleCleanup}
-                                    disabled={isCleaning}
-                                    className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium disabled:opacity-50"
-                                >
-                                    {isCleaning ? <Loader2 size={16} className="animate-spin" /> : <Wrench size={16} />}
-                                    Corrigir
-                                </button>
-                                {cleanupMessage && <span className="text-xs font-bold text-emerald-600">{cleanupMessage}</span>}
-                            </div>
-                        </div>
-                    </section>
+
                 </div>
 
                 <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 rounded-b-2xl">

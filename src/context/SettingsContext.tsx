@@ -12,6 +12,12 @@ interface PillarGoals {
     emergency: number;   // 0.05
 }
 
+interface ExpenseOverrides {
+    dux: number | null;
+    c6: number | null;
+    debit: number | null;
+}
+
 interface SettingsContextType {
     openingBalance: number;
     setOpeningBalance: (value: number) => void;
@@ -27,6 +33,8 @@ interface SettingsContextType {
     setExpenseTarget: (value: number) => void;
     incomeSources: { id: string; name: string; amount: number }[];
     setIncomeSources: (sources: { id: string; name: string; amount: number }[]) => void;
+    expenseOverrides: ExpenseOverrides;
+    setExpenseOverrides: (overrides: ExpenseOverrides) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -39,6 +47,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         guiltyFree: 0.15,
         emergency: 0.05,
     });
+    const [expenseOverrides, setExpenseOverrides] = useState<ExpenseOverrides>({ dux: null, c6: null, debit: null });
     const [categoryMapping, setCategoryMapping] = useState<Record<string, Pilar>>({});
     const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>({});
     const [incomeTarget, setIncomeTarget] = useState(0);
@@ -62,6 +71,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                 setIncomeTarget(data.incomeTarget || 0);
                 setExpenseTarget(data.expenseTarget || 0);
                 setIncomeSources(data.incomeSources || []);
+                setExpenseOverrides(data.expenseOverrides || { dux: null, c6: null, debit: null });
             } else {
                 // Migration: If Firestore is empty, check localStorage
                 const savedBalance = localStorage.getItem('openingBalance');
@@ -71,8 +81,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                 const savedIncomeTarget = localStorage.getItem('incomeTarget');
                 const savedExpenseTarget = localStorage.getItem('expenseTarget');
                 const savedIncomeSources = localStorage.getItem('incomeSources');
+                const savedExpenseOverrides = localStorage.getItem('expenseOverrides');
 
-                if (savedBalance || savedGoals || savedMapping || savedBudgets || savedIncomeTarget || savedExpenseTarget || savedIncomeSources) {
+                if (savedBalance || savedGoals || savedMapping || savedBudgets || savedIncomeTarget || savedExpenseTarget || savedIncomeSources || savedExpenseOverrides) {
                     const initialData = {
                         openingBalance: savedBalance ? parseFloat(savedBalance) : 0,
                         pillarGoals: savedGoals ? JSON.parse(savedGoals) : { fixed: 0.65, investments: 0.15, guiltyFree: 0.15, emergency: 0.05 },
@@ -80,7 +91,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                         categoryBudgets: savedBudgets ? JSON.parse(savedBudgets) : {},
                         incomeTarget: savedIncomeTarget ? parseFloat(savedIncomeTarget) : 0,
                         expenseTarget: savedExpenseTarget ? parseFloat(savedExpenseTarget) : 0,
-                        incomeSources: savedIncomeSources ? JSON.parse(savedIncomeSources) : []
+                        incomeSources: savedIncomeSources ? JSON.parse(savedIncomeSources) : [],
+                        expenseOverrides: savedExpenseOverrides ? JSON.parse(savedExpenseOverrides) : { dux: null, c6: null, debit: null }
                     };
 
                     // Save to Firestore
@@ -147,6 +159,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setDoc(doc(db, 'settings', SETTINGS_DOC_ID), { incomeSources: sources }, { merge: true });
     };
 
+    const updateExpenseOverrides = (overrides: ExpenseOverrides) => {
+        setExpenseOverrides(overrides);
+        setDoc(doc(db, 'settings', SETTINGS_DOC_ID), { expenseOverrides: overrides }, { merge: true });
+    };
+
     return (
         <SettingsContext.Provider value={{
             openingBalance, setOpeningBalance: updateOpeningBalance,
@@ -155,7 +172,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             categoryBudgets, setCategoryBudgets: updateCategoryBudgets,
             incomeTarget, setIncomeTarget: updateIncomeTarget,
             expenseTarget, setExpenseTarget: updateExpenseTarget,
-            incomeSources, setIncomeSources: updateIncomeSources
+            incomeSources, setIncomeSources: updateIncomeSources,
+            expenseOverrides, setExpenseOverrides: updateExpenseOverrides
         }}>
             {children}
         </SettingsContext.Provider>

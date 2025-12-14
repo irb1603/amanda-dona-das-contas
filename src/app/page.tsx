@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Image from "next/image";
 
 import { useTransactions } from '@/hooks/useTransactions';
+import { useAccumulatedBalance } from '@/hooks/useAccumulatedBalance';
+import { useRecentTransactions } from '@/hooks/useRecentTransactions';
 import { useMonth } from '@/context/MonthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag, ChevronLeft, ChevronRight, Wallet, Copy } from 'lucide-react';
@@ -15,23 +17,23 @@ import EditIncomeSourcesModal from '@/components/dashboard/EditIncomeSourcesModa
 import EditIncomeModal from '@/components/dashboard/EditIncomeModal';
 import DuplicateDetectorModal from '@/components/transactions/DuplicateDetectorModal';
 import HighlightableText from '@/components/ui/HighlightableText';
+import EditExpenseSummaryModal from '@/components/dashboard/EditExpenseSummaryModal';
 import { Transaction } from '@/types';
 
 export default function Home() {
   const { selectedDate, nextMonth, prevMonth } = useMonth();
-  const { openingBalance, pillarGoals, incomeTarget, expenseTarget, incomeSources } = useSettings();
+  const { openingBalance, pillarGoals, incomeTarget, expenseTarget, incomeSources, expenseOverrides } = useSettings();
 
   const currentYear = selectedDate.getFullYear();
   const currentMonth = selectedDate.getMonth() + 1; // 1-12
 
   const { transactions, loading, error, income, expense, balance, pillars } = useTransactions(currentYear, currentMonth);
 
-  // Get previous month's balance
-  const previousDate = new Date(selectedDate);
-  previousDate.setMonth(previousDate.getMonth() - 1);
-  const previousYear = previousDate.getFullYear();
-  const previousMonth = previousDate.getMonth() + 1;
-  const { balance: previousMonthBalance } = useTransactions(previousYear, previousMonth);
+  // Get accumulated balance up to current month (not including current month)
+  const { accumulatedBalance: previousMonthBalance } = useAccumulatedBalance(currentYear, currentMonth);
+
+  // Get recent transactions across all months for dashboard cards
+  const { allTransactions: recentTransactions, creditCardTransactions: recentCreditCardTransactions } = useRecentTransactions(10);
 
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +42,7 @@ export default function Home() {
   const [isIncomeSourcesModalOpen, setIsIncomeSourcesModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isDuplicateDetectorOpen, setIsDuplicateDetectorOpen] = useState(false);
+  const [isExpenseSummaryModalOpen, setIsExpenseSummaryModalOpen] = useState(false);
   const [editTargetModal, setEditTargetModal] = useState<{ isOpen: boolean; type: 'income' | 'expense' }>({ isOpen: false, type: 'income' });
 
   const handleTransactionClick = (transaction: Transaction) => {
@@ -47,14 +50,35 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const currentBalance = openingBalance + balance;
+  const currentBalance = previousMonthBalance + (income - expense);
 
-  // 4 Pillars Logic
+  // 4 Pillars Logic - use income or 1 to avoid division by zero
+  const safeIncome = income > 0 ? income : 1;
   const limits = {
-    fixed: income * pillarGoals.fixed,
-    investments: income * pillarGoals.investments,
-    guiltyFree: income * pillarGoals.guiltyFree,
-    emergency: income * pillarGoals.emergency,
+    fixed: safeIncome * pillarGoals.fixed,
+    investments: safeIncome * pillarGoals.investments,
+    guiltyFree: safeIncome * pillarGoals.guiltyFree,
+    emergency: safeIncome * pillarGoals.emergency,
+  };
+
+  // Calculate Expense Breakdowns
+  const calculatedExpenses = {
+    dux: transactions
+      .filter(t => t.type === 'expense' && t.paymentMethod === 'credit_card' && t.cardSource === 'Cartão DUX')
+      .reduce((sum, t) => sum + t.amount, 0),
+    c6: transactions
+      .filter(t => t.type === 'expense' && t.paymentMethod === 'credit_card' && t.cardSource === 'Cartão C6')
+      .reduce((sum, t) => sum + t.amount, 0),
+    debit: transactions
+      .filter(t => t.type === 'expense' && t.paymentMethod === 'debit_card')
+      .reduce((sum, t) => sum + t.amount, 0),
+  };
+
+  // Use overrides if present
+  const displayExpenses = {
+    dux: expenseOverrides.dux !== null ? expenseOverrides.dux : calculatedExpenses.dux,
+    c6: expenseOverrides.c6 !== null ? expenseOverrides.c6 : calculatedExpenses.c6,
+    debit: expenseOverrides.debit !== null ? expenseOverrides.debit : calculatedExpenses.debit,
   };
 
   if (error) {
@@ -161,7 +185,7 @@ export default function Home() {
               {income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Saldo mês anterior: {(openingBalance + previousMonthBalance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              Saldo mês anterior: {previousMonthBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </p>
             <div className="mt-3 flex gap-2">
               <button
@@ -196,13 +220,46 @@ export default function Home() {
             </div>
           </div>
           <div>
-            <p className="text-sm text-slate-500 font-medium mb-1">Despesas</p>
-            <h3 className="text-2xl font-bold text-slate-800">
-              {expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Teto: {expenseTarget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </p>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="text-sm text-slate-500 font-medium mb-1">Despesas</p>
+                <h3 className="text-2xl font-bold text-slate-800">
+                  {expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Teto: {expenseTarget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsExpenseSummaryModalOpen(true); }}
+                className="p-2 hover:bg-slate-50 rounded-lg text-emerald-600 font-medium text-xs flex items-center gap-1"
+              >
+                <Edit2 size={12} /> Resumo
+              </button>
+            </div>
+
+            {/* Expense Breakdown Summary */}
+            <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500">Cartão DUX:</span>
+                <span className={`font-medium ${expenseOverrides.dux !== null ? 'text-amber-600' : 'text-slate-700'}`}>
+                  {displayExpenses.dux.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500">Cartão C6:</span>
+                <span className={`font-medium ${expenseOverrides.c6 !== null ? 'text-amber-600' : 'text-slate-700'}`}>
+                  {displayExpenses.c6.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500">Débito:</span>
+                <span className={`font-medium ${expenseOverrides.debit !== null ? 'text-amber-600' : 'text-slate-700'}`}>
+                  {displayExpenses.debit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -216,9 +273,7 @@ export default function Home() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
             <h3 className="font-bold text-slate-800 mb-4">Cartão de Crédito (Recentes)</h3>
             <div className="space-y-3">
-              {transactions
-                .filter(t => t.paymentMethod === 'credit_card')
-                .slice(0, 5)
+              {recentCreditCardTransactions
                 .map((t) => (
                   <div
                     key={t.id}
@@ -249,8 +304,8 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
-              {transactions.filter(t => t.paymentMethod === 'credit_card').length === 0 && (
-                <p className="text-center text-slate-500 py-4">Nenhuma compra no cartão neste mês.</p>
+              {recentCreditCardTransactions.length === 0 && (
+                <p className="text-center text-slate-500 py-4">Nenhuma compra no cartão.</p>
               )}
             </div>
           </div>
@@ -273,13 +328,13 @@ export default function Home() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-700 font-medium">Despesas Fixas (Meta: {(pillarGoals.fixed * 100).toFixed(0)}%)</span>
                   <span className={pillars['Despesas Fixas'] > limits.fixed ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Despesas Fixas'] / (income || 1)) * 100).toFixed(1)}%
+                    {((pillars['Despesas Fixas'] / safeIncome) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${pillars['Despesas Fixas'] > limits.fixed ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min((pillars['Despesas Fixas'] / (income || 1)) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((pillars['Despesas Fixas'] / limits.fixed) * 100, 100)}%` }}
                   ></div>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
@@ -292,15 +347,18 @@ export default function Home() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-700 font-medium">Lazer / Guilty-free (Meta: {(pillarGoals.guiltyFree * 100).toFixed(0)}%)</span>
                   <span className={pillars['Guilty-free'] > limits.guiltyFree ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Guilty-free'] / (income || 1)) * 100).toFixed(1)}%
+                    {((pillars['Guilty-free'] / safeIncome) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${pillars['Guilty-free'] > limits.guiltyFree ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min((pillars['Guilty-free'] / (income || 1)) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((pillars['Guilty-free'] / limits.guiltyFree) * 100, 100)}%` }}
                   ></div>
                 </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Gasto: {pillars['Guilty-free'].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / Teto: {limits.guiltyFree.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
               </div>
 
               {/* Investments */}
@@ -308,15 +366,18 @@ export default function Home() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-700 font-medium">Investimentos (Meta: {(pillarGoals.investments * 100).toFixed(0)}%)</span>
                   <span className={pillars['Investimentos'] < limits.investments ? 'text-amber-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Investimentos'] / (income || 1)) * 100).toFixed(1)}%
+                    {((pillars['Investimentos'] / safeIncome) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
                   <div
                     className="h-2 rounded-full bg-blue-500"
-                    style={{ width: `${Math.min((pillars['Investimentos'] / (income || 1)) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((pillars['Investimentos'] / limits.investments) * 100, 100)}%` }}
                   ></div>
                 </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Gasto: {pillars['Investimentos'].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / Teto: {limits.investments.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
               </div>
 
               {/* Emergency / Imprevistos */}
@@ -324,15 +385,18 @@ export default function Home() {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-700 font-medium">Imprevistos (Meta: {(pillarGoals.emergency * 100).toFixed(0)}%)</span>
                   <span className={pillars['Imprevistos'] > limits.emergency ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Imprevistos'] / (income || 1)) * 100).toFixed(1)}%
+                    {((pillars['Imprevistos'] / safeIncome) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${pillars['Imprevistos'] > limits.emergency ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min((pillars['Imprevistos'] / (income || 1)) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((pillars['Imprevistos'] / limits.emergency) * 100, 100)}%` }}
                   ></div>
                 </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Gasto: {pillars['Imprevistos'].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / Teto: {limits.emergency.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
               </div>
             </div>
           </div>
@@ -341,37 +405,37 @@ export default function Home() {
         {/* Right Column: Recent Transactions */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-        <h3 className="font-bold text-slate-800 mb-4">Últimas Transações</h3>
-        <div className="space-y-3">
-          {transactions.slice(0, 5).map((t) => (
-            <div
-              key={t.id}
-              onClick={() => handleTransactionClick(t)}
-              className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                  {t.type === 'income' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+            <h3 className="font-bold text-slate-800 mb-4">Últimas Transações</h3>
+            <div className="space-y-3">
+              {recentTransactions.map((t) => (
+                <div
+                  key={t.id}
+                  onClick={() => handleTransactionClick(t)}
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                      {t.type === 'income' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-800">{t.description}</p>
+                      <p className="text-xs text-slate-500">{t.category} • {t.date.toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-bold ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {t.type === 'income' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                    {t.totalInstallments && (
+                      <p className="text-xs text-slate-500">{t.installmentIndex}/{t.totalInstallments}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-slate-800">{t.description}</p>
-                  <p className="text-xs text-slate-500">{t.category} • {t.date.toLocaleDateString()}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`font-bold ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {t.type === 'income' ? '+' : '-'} {t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </p>
-                {t.totalInstallments && (
-                  <p className="text-xs text-slate-500">{t.installmentIndex}/{t.totalInstallments}</p>
-                )}
-              </div>
+              ))}
+              {recentTransactions.length === 0 && (
+                <p className="text-center text-slate-500 py-4">Nenhuma transação.</p>
+              )}
             </div>
-          ))}
-          {transactions.length === 0 && (
-            <p className="text-center text-slate-500 py-4">Nenhuma transação neste mês.</p>
-          )}
-          </div>
           </div>
         </div>
       </div>
@@ -419,6 +483,12 @@ export default function Home() {
         onClose={() => setIsDuplicateDetectorOpen(false)}
         transactions={transactions.filter(t => t.id) as (Transaction & { id: string })[]}
         onUpdate={() => window.location.reload()}
+      />
+
+      <EditExpenseSummaryModal
+        isOpen={isExpenseSummaryModalOpen}
+        onClose={() => setIsExpenseSummaryModalOpen(false)}
+        calculatedValues={calculatedExpenses}
       />
     </div>
   );

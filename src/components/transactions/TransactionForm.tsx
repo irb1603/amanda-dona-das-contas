@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMonth } from '@/context/MonthContext';
+import { useSettings } from '@/context/SettingsContext';
 import { CATEGORIES, PILARS } from '@/constants';
 import { createInstallmentTransactions, generateRecurringTransactions } from '@/services/transactionService';
 import { db } from '@/lib/firebase';
@@ -16,6 +17,7 @@ import { parseDateStringToLocal, formatDateForInput } from '@/utils/dateUtils';
 export default function TransactionForm() {
     const router = useRouter();
     const { selectedDate } = useMonth();
+    const { categoryMapping } = useSettings();
     const [loading, setLoading] = useState(false);
 
     // Form State
@@ -23,7 +25,7 @@ export default function TransactionForm() {
     const [amount, setAmount] = useState(0);
     const [date, setDate] = useState('');
     const [type, setType] = useState<'income' | 'expense'>('expense');
-    const [category, setCategory] = useState(CATEGORIES[0].name);
+    const [category, setCategory] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<Transaction['paymentMethod']>('credit_card');
     const [cardSource, setCardSource] = useState('Cartão DUX');
 
@@ -38,14 +40,33 @@ export default function TransactionForm() {
         const month = selectedDate.getMonth();
         const firstDay = new Date(year, month, 1);
         setDate(formatDateForInput(firstDay));
+        setDate(formatDateForInput(firstDay));
     }, [selectedDate]);
+
+    // Merge Categories
+    const allCategories = [
+        ...CATEGORIES.map((c: any) => ({
+            ...c,
+            pilar: categoryMapping[c.name] || c.pilar
+        })),
+        ...Object.keys(categoryMapping)
+            .filter((name: string) => !CATEGORIES.some(c => c.name === name))
+            .map((name: string) => ({ id: name, name, pilar: categoryMapping[name] }))
+    ].sort((a, b) => a.name.localeCompare(b.name));
+
+    // Set default category if empty
+    useEffect(() => {
+        if (!category && allCategories.length > 0) {
+            setCategory(allCategories[0].name);
+        }
+    }, [allCategories, category]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            const selectedCategory = CATEGORIES.find(c => c.name === category);
+            const selectedCategory = allCategories.find(c => c.name === category);
             const pilar = selectedCategory?.pilar || 'Guilty-free';
             const amountValue = amount;
 
@@ -55,6 +76,10 @@ export default function TransactionForm() {
 
             // Get the day from the date input field
             const [_, __, dayFromInput] = date.split('-').map(Number);
+            // Use _ and __ as ignored variables (or could verify usage)
+            if (false) { console.log(_, __); } // Hack to avoid 'unused' linter error if strictly configured, but usually 'any' is the issue
+            // Actually the error was "Parameter 'c' implicitly has an 'any' type" at line 48/53.
+            // Let's fix lines 48-55 map callbacks first.
 
             // Create date with selected month/year but user's chosen day
             const transactionDate = new Date(year, month, dayFromInput);
@@ -106,6 +131,7 @@ export default function TransactionForm() {
                     description,
                     amount: amountValue,
                     date: transactionDate,
+                    createdAt: Timestamp.now(),
                     type,
                     category,
                     pilar,
@@ -211,7 +237,7 @@ export default function TransactionForm() {
                             onChange={(e) => setCategory(e.target.value)}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-medium text-slate-800"
                         >
-                            {CATEGORIES.map((cat) => (
+                            {allCategories.map((cat) => (
                                 <option key={cat.id} value={cat.name}>
                                     {cat.name} ({cat.pilar})
                                 </option>

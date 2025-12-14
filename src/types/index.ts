@@ -15,6 +15,7 @@ export interface Transaction {
     description: string;
     amount: number;
     date: Date; // Will be converted to Timestamp in Firestore
+    createdAt?: Date; // Timestamp when transaction was created/inserted
     type: TransactionType;
     category: string; // Category ID or Name
     pilar?: Pilar; // Denormalized for easier querying
