@@ -8,7 +8,7 @@ import { useAccumulatedBalance } from '@/hooks/useAccumulatedBalance';
 import { useRecentTransactions } from '@/hooks/useRecentTransactions';
 import { useMonth } from '@/context/MonthContext';
 import { useSettings } from '@/context/SettingsContext';
-import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag, ChevronLeft, ChevronRight, Wallet, Copy } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, AlertCircle, Edit2, Settings, Tag, ChevronLeft, ChevronRight, Wallet, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 import EditTransactionModal from '@/components/transactions/EditTransactionModal';
 import SettingsModal from '@/components/settings/SettingsModal';
 import EditBalanceModal from '@/components/dashboard/EditBalanceModal';
@@ -22,7 +22,7 @@ import { Transaction } from '@/types';
 
 export default function Home() {
   const { selectedDate, nextMonth, prevMonth } = useMonth();
-  const { openingBalance, pillarGoals, incomeTarget, expenseTarget, incomeSources, expenseOverrides } = useSettings();
+  const { openingBalance, pillarGoals, incomeTarget, expenseTarget, incomeSources, expenseOverrides, categoryMapping, categoryBudgets } = useSettings();
 
   const currentYear = selectedDate.getFullYear();
   const currentMonth = selectedDate.getMonth() + 1; // 1-12
@@ -44,6 +44,7 @@ export default function Home() {
   const [isDuplicateDetectorOpen, setIsDuplicateDetectorOpen] = useState(false);
   const [isExpenseSummaryModalOpen, setIsExpenseSummaryModalOpen] = useState(false);
   const [editTargetModal, setEditTargetModal] = useState<{ isOpen: boolean; type: 'income' | 'expense' }>({ isOpen: false, type: 'income' });
+  const [expandedPillar, setExpandedPillar] = useState<string | null>(null);
 
   const handleTransactionClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -60,6 +61,21 @@ export default function Home() {
     guiltyFree: safeIncome * pillarGoals.guiltyFree,
     emergency: safeIncome * pillarGoals.emergency,
   };
+
+  // Calculate expenses by category for each pilar
+  const categoryExpenses: Record<string, number> = {};
+  transactions.forEach(t => {
+    if (t.type === 'expense') {
+      let pilar = t.pilar;
+      if (categoryMapping[t.category]) {
+        pilar = categoryMapping[t.category];
+      }
+      if (pilar) {
+        const key = `${pilar}::${t.category}`;
+        categoryExpenses[key] = (categoryExpenses[key] || 0) + t.amount;
+      }
+    }
+  });
 
   // Calculate Expense Breakdowns
   const calculatedExpenses = {
@@ -324,11 +340,14 @@ export default function Home() {
 
             <div className="space-y-4">
               {/* Fixed Expenses */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-700 font-medium">Despesas Fixas (Meta: {(pillarGoals.fixed * 100).toFixed(0)}%)</span>
+              <div className="cursor-pointer" onClick={() => setExpandedPillar(expandedPillar === 'Despesas Fixas' ? null : 'Despesas Fixas')}>
+                <div className="flex justify-between text-sm mb-1 items-center">
+                  <span className="text-slate-700 font-medium flex items-center gap-1">
+                    Despesas Fixas (Meta: {(pillarGoals.fixed * 100).toFixed(0)}%)
+                    {expandedPillar === 'Despesas Fixas' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
                   <span className={pillars['Despesas Fixas'] > limits.fixed ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Despesas Fixas'] / safeIncome) * 100).toFixed(1)}%
+                    {((pillars['Despesas Fixas'] / limits.fixed) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
@@ -340,14 +359,46 @@ export default function Home() {
                 <p className="text-xs text-slate-500 mt-1">
                   Gasto: {pillars['Despesas Fixas'].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / Teto: {limits.fixed.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
+                {expandedPillar === 'Despesas Fixas' && (
+                  <div className="mt-3 pl-4 border-l-2 border-emerald-200 space-y-2">
+                    {Object.entries(categoryExpenses)
+                      .filter(([key]) => key.startsWith('Despesas Fixas::'))
+                      .map(([key, spent]) => {
+                        const category = key.split('::')[1];
+                        const categoryLimit = categoryBudgets[category] || 0;
+                        return (
+                          <div key={key} className="text-xs">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-slate-600">{category}</span>
+                              <span className={spent > categoryLimit && categoryLimit > 0 ? 'text-red-600 font-semibold' : 'text-slate-700'}>
+                                {spent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {categoryLimit > 0 && ` / ${categoryLimit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                              </span>
+                            </div>
+                            {categoryLimit > 0 && (
+                              <div className="w-full bg-slate-50 rounded-full h-1">
+                                <div
+                                  className={`h-1 rounded-full ${spent > categoryLimit ? 'bg-red-400' : 'bg-emerald-400'}`}
+                                  style={{ width: `${Math.min((spent / categoryLimit) * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
 
               {/* Guilty-free */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-700 font-medium">Lazer / Guilty-free (Meta: {(pillarGoals.guiltyFree * 100).toFixed(0)}%)</span>
+              <div className="cursor-pointer" onClick={() => setExpandedPillar(expandedPillar === 'Guilty-free' ? null : 'Guilty-free')}>
+                <div className="flex justify-between text-sm mb-1 items-center">
+                  <span className="text-slate-700 font-medium flex items-center gap-1">
+                    Lazer / Guilty-free (Meta: {(pillarGoals.guiltyFree * 100).toFixed(0)}%)
+                    {expandedPillar === 'Guilty-free' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
                   <span className={pillars['Guilty-free'] > limits.guiltyFree ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Guilty-free'] / safeIncome) * 100).toFixed(1)}%
+                    {((pillars['Guilty-free'] / limits.guiltyFree) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
@@ -359,14 +410,46 @@ export default function Home() {
                 <p className="text-xs text-slate-500 mt-1">
                   Gasto: {pillars['Guilty-free'].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / Teto: {limits.guiltyFree.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
+                {expandedPillar === 'Guilty-free' && (
+                  <div className="mt-3 pl-4 border-l-2 border-emerald-200 space-y-2">
+                    {Object.entries(categoryExpenses)
+                      .filter(([key]) => key.startsWith('Guilty-free::'))
+                      .map(([key, spent]) => {
+                        const category = key.split('::')[1];
+                        const categoryLimit = categoryBudgets[category] || 0;
+                        return (
+                          <div key={key} className="text-xs">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-slate-600">{category}</span>
+                              <span className={spent > categoryLimit && categoryLimit > 0 ? 'text-red-600 font-semibold' : 'text-slate-700'}>
+                                {spent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {categoryLimit > 0 && ` / ${categoryLimit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                              </span>
+                            </div>
+                            {categoryLimit > 0 && (
+                              <div className="w-full bg-slate-50 rounded-full h-1">
+                                <div
+                                  className={`h-1 rounded-full ${spent > categoryLimit ? 'bg-red-400' : 'bg-emerald-400'}`}
+                                  style={{ width: `${Math.min((spent / categoryLimit) * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
 
               {/* Investments */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-700 font-medium">Investimentos (Meta: {(pillarGoals.investments * 100).toFixed(0)}%)</span>
+              <div className="cursor-pointer" onClick={() => setExpandedPillar(expandedPillar === 'Investimentos' ? null : 'Investimentos')}>
+                <div className="flex justify-between text-sm mb-1 items-center">
+                  <span className="text-slate-700 font-medium flex items-center gap-1">
+                    Investimentos (Meta: {(pillarGoals.investments * 100).toFixed(0)}%)
+                    {expandedPillar === 'Investimentos' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
                   <span className={pillars['Investimentos'] < limits.investments ? 'text-amber-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Investimentos'] / safeIncome) * 100).toFixed(1)}%
+                    {((pillars['Investimentos'] / limits.investments) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
@@ -378,14 +461,46 @@ export default function Home() {
                 <p className="text-xs text-slate-500 mt-1">
                   Gasto: {pillars['Investimentos'].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / Teto: {limits.investments.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
+                {expandedPillar === 'Investimentos' && (
+                  <div className="mt-3 pl-4 border-l-2 border-blue-200 space-y-2">
+                    {Object.entries(categoryExpenses)
+                      .filter(([key]) => key.startsWith('Investimentos::'))
+                      .map(([key, spent]) => {
+                        const category = key.split('::')[1];
+                        const categoryLimit = categoryBudgets[category] || 0;
+                        return (
+                          <div key={key} className="text-xs">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-slate-600">{category}</span>
+                              <span className={spent > categoryLimit && categoryLimit > 0 ? 'text-red-600 font-semibold' : 'text-slate-700'}>
+                                {spent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {categoryLimit > 0 && ` / ${categoryLimit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                              </span>
+                            </div>
+                            {categoryLimit > 0 && (
+                              <div className="w-full bg-slate-50 rounded-full h-1">
+                                <div
+                                  className={`h-1 rounded-full ${spent > categoryLimit ? 'bg-red-400' : 'bg-blue-400'}`}
+                                  style={{ width: `${Math.min((spent / categoryLimit) * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
 
               {/* Emergency / Imprevistos */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-700 font-medium">Imprevistos (Meta: {(pillarGoals.emergency * 100).toFixed(0)}%)</span>
+              <div className="cursor-pointer" onClick={() => setExpandedPillar(expandedPillar === 'Imprevistos' ? null : 'Imprevistos')}>
+                <div className="flex justify-between text-sm mb-1 items-center">
+                  <span className="text-slate-700 font-medium flex items-center gap-1">
+                    Imprevistos (Meta: {(pillarGoals.emergency * 100).toFixed(0)}%)
+                    {expandedPillar === 'Imprevistos' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
                   <span className={pillars['Imprevistos'] > limits.emergency ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
-                    {((pillars['Imprevistos'] / safeIncome) * 100).toFixed(1)}%
+                    {((pillars['Imprevistos'] / limits.emergency) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2">
@@ -397,6 +512,35 @@ export default function Home() {
                 <p className="text-xs text-slate-500 mt-1">
                   Gasto: {pillars['Imprevistos'].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / Teto: {limits.emergency.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
+                {expandedPillar === 'Imprevistos' && (
+                  <div className="mt-3 pl-4 border-l-2 border-emerald-200 space-y-2">
+                    {Object.entries(categoryExpenses)
+                      .filter(([key]) => key.startsWith('Imprevistos::'))
+                      .map(([key, spent]) => {
+                        const category = key.split('::')[1];
+                        const categoryLimit = categoryBudgets[category] || 0;
+                        return (
+                          <div key={key} className="text-xs">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-slate-600">{category}</span>
+                              <span className={spent > categoryLimit && categoryLimit > 0 ? 'text-red-600 font-semibold' : 'text-slate-700'}>
+                                {spent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {categoryLimit > 0 && ` / ${categoryLimit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                              </span>
+                            </div>
+                            {categoryLimit > 0 && (
+                              <div className="w-full bg-slate-50 rounded-full h-1">
+                                <div
+                                  className={`h-1 rounded-full ${spent > categoryLimit ? 'bg-red-400' : 'bg-emerald-400'}`}
+                                  style={{ width: `${Math.min((spent / categoryLimit) * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
             </div>
           </div>

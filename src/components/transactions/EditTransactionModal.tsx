@@ -9,6 +9,7 @@ import CurrencyInput from '@/components/ui/CurrencyInput';
 import { CATEGORIES } from '@/constants';
 import { modifyInstallmentCount } from '@/services/transactionService';
 import { parseDateStringToLocal } from '@/utils/dateUtils';
+import { useSettings } from '@/context/SettingsContext';
 
 interface EditTransactionModalProps {
     transaction: Transaction | null;
@@ -18,6 +19,7 @@ interface EditTransactionModalProps {
 }
 
 export default function EditTransactionModal({ transaction, isOpen, onClose, onUpdate }: EditTransactionModalProps) {
+    const { categoryMapping } = useSettings();
     const [formData, setFormData] = useState({
         description: '',
         amount: 0,
@@ -29,6 +31,17 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
     const [loading, setLoading] = useState(false);
     const [updateAllInstallments, setUpdateAllInstallments] = useState(false);
     const [newInstallmentCount, setNewInstallmentCount] = useState(1);
+
+    // Merge Categories (same logic as TransactionForm)
+    const allCategories = [
+        ...CATEGORIES.map((c) => ({
+            ...c,
+            pilar: categoryMapping[c.name] || c.pilar
+        })),
+        ...Object.keys(categoryMapping)
+            .filter((name) => !CATEGORIES.some(c => c.name === name))
+            .map((name) => ({ id: name, name, pilar: categoryMapping[name] }))
+    ].sort((a, b) => a.name.localeCompare(b.name));
 
     useEffect(() => {
         if (transaction) {
@@ -210,7 +223,7 @@ export default function EditTransactionModal({ transaction, isOpen, onClose, onU
                             onChange={e => setFormData({ ...formData, category: e.target.value })}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-slate-800 bg-white"
                         >
-                            {CATEGORIES.map((cat) => (
+                            {allCategories.map((cat) => (
                                 <option key={cat.id} value={cat.name}>
                                     {cat.name} ({cat.pilar})
                                 </option>

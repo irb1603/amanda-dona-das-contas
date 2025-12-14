@@ -31,7 +31,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const { selectedDate } = useMonth();
     const currentYear = selectedDate.getFullYear();
     const currentMonth = selectedDate.getMonth() + 1;
-    const { transactions } = useTransactions(currentYear, currentMonth);
+    const { transactions, income } = useTransactions(currentYear, currentMonth);
+    const safeIncome = income > 0 ? income : 1; // Avoid division by zero
 
     // Local state for form
     const [activeTab, setActiveTab] = useState<'general' | 'categories'>('general');
@@ -175,6 +176,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    = {(safeIncome * localGoals.fixed).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-slate-800 mb-1">Investimentos</label>
@@ -187,6 +191,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    = {(safeIncome * localGoals.investments).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-slate-800 mb-1">Lazer</label>
@@ -199,6 +206,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    = {(safeIncome * localGoals.guiltyFree).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-slate-800 mb-1">Imprevistos</label>
@@ -211,6 +221,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     />
                                     <span className="text-slate-500">%</span>
                                 </div>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    = {(safeIncome * localGoals.emergency).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </p>
                             </div>
                         </div>
                     </section>
@@ -317,15 +330,22 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                         </div>
 
                                                         <div className="flex items-center gap-2">
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-xs text-slate-400 font-medium">Limite:</span>
-                                                                <input
-                                                                    type="number"
-                                                                    value={budget}
-                                                                    onChange={e => setLocalBudgets(prev => ({ ...prev, [cat]: parseFloat(e.target.value) || 0 }))}
-                                                                    className="w-24 px-2 py-1 border border-slate-200 rounded text-sm text-right font-medium text-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none"
-                                                                    placeholder="0,00"
-                                                                />
+                                                            <div className="flex flex-col items-end gap-0.5">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-xs text-slate-400 font-medium">Limite:</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={budget}
+                                                                        onChange={e => setLocalBudgets(prev => ({ ...prev, [cat]: parseFloat(e.target.value) || 0 }))}
+                                                                        className="w-24 px-2 py-1 border border-slate-200 rounded text-sm text-right font-medium text-slate-700 focus:ring-1 focus:ring-emerald-500 outline-none"
+                                                                        placeholder="0,00"
+                                                                    />
+                                                                </div>
+                                                                {budget > 0 && (
+                                                                    <span className="text-[10px] text-slate-400">
+                                                                        ({((budget / safeIncome) * 100).toFixed(1)}% da receita)
+                                                                    </span>
+                                                                )}
                                                             </div>
 
                                                             <button
